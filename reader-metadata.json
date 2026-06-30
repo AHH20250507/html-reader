@@ -1,41 +1,39 @@
 {
   "version": 1,
-  "updatedAt": 1782789718692,
+  "updatedAt": 1782790161437,
   "categories": [
     {
-      "id": "article",
-      "name": "æç« ",
-      "color": "#34c759"
-    },
-    {
-      "id": "novel",
-      "name": "å°è¯´",
-      "color": "#af52de"
+      "id": "uncategorized",
+      "name": "未分类",
+      "color": "#86868b"
     },
     {
       "id": "tech",
-      "name": "ææ¯ææ¡£",
+      "name": "技术文档",
       "color": "#007aff"
     },
     {
-      "id": "uncategorized",
-      "name": "æªåç±»",
-      "color": "#86868b"
+      "id": "novel",
+      "name": "小说",
+      "color": "#af52de"
+    },
+    {
+      "id": "article",
+      "name": "文章",
+      "color": "#34c759"
     }
   ],
   "books": [
     {
       "id": "id_1782789669485_rqkfn38ob",
-      "title": "让思考上瘾",
-      "description": "",
       "filename": "id_1782789669485_rqkfn38ob.html",
       "categoryId": "uncategorized",
       "progress": 0,
       "scrollPosition": 0,
       "pinned": false,
       "createdAt": 1782789669485,
-      "updatedAt": 1782789669485,
-      "lastReadAt": 1782789703812
+      "updatedAt": 1782789718692,
+      "lastReadAt": null
     }
   ]
 }
