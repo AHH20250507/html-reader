@@ -1036,34 +1036,9 @@
         <div class="modal" style="max-width: 640px;">
             <div class="modal-header">
                 <div class="modal-title">设置</div>
-                <div class="modal-subtitle">配置 GitHub 同步与阅读偏好</div>
+                <div class="modal-subtitle">调整阅读偏好</div>
             </div>
             <div class="modal-body">
-                <div class="settings-card">
-                    <div class="settings-card-title">GitHub 同步</div>
-                    <div class="settings-card-desc">填写信息后，阅读器可以从私密仓库读取 HTML 文档并同步阅读进度。</div>
-                    <div class="settings-grid">
-                        <div class="form-group">
-                            <label class="form-label">GitHub 用户名</label>
-                            <input type="text" class="form-input" id="githubUsername" placeholder="yourname">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">文档仓库名称</label>
-                            <input type="text" class="form-input" id="githubRepo" placeholder="html-library">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Personal Access Token</label>
-                        <input type="password" class="form-input" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxx">
-                        <div class="form-hint">Token 仅保存在浏览器本地，用于访问你的私密文档仓库。需要 <code>repo</code> 权限。</div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="autoSync"> 自动同步阅读进度到 GitHub
-                        </label>
-                    </div>
-                </div>
-
                 <div class="settings-card">
                     <div class="settings-card-title">阅读设置</div>
                     <div class="settings-card-desc">调整阅读器的默认显示方式。</div>
@@ -1101,11 +1076,12 @@
             currentCategory: null,
             searchQuery: '',
             settings: {
-                githubUsername: '',
-                githubRepo: '',
-                githubToken: '',
-                autoSync: false,
                 fontSize: 16
+            },
+            repo: {
+                owner: 'AHH20250507',
+                name: 'html-reader',
+                branch: 'main'
             },
             pendingFiles: []
         };
@@ -1492,10 +1468,6 @@
             fileList.innerHTML = '';
             renderBooks();
             showToast(`成功导入 ${importedCount} 本书籍`);
-            
-            if (state.settings.autoSync && state.settings.githubToken) {
-                syncToGitHub();
-            }
         });
 
         function readFileAsText(file) {
@@ -1600,7 +1572,6 @@
                     if (window.saveProgressTimeout) clearTimeout(window.saveProgressTimeout);
                     window.saveProgressTimeout = setTimeout(() => {
                         dbPut('books', book);
-                        if (state.settings.autoSync) syncToGitHub();
                     }, 2000);
                 };
                 
@@ -1640,7 +1611,6 @@
             state.books = state.books.filter(b => b.id !== id);
             renderBooks();
             showToast('书籍已删除');
-            if (state.settings.autoSync) syncToGitHub();
         }
 
         async function editBookCategory(id) {
@@ -1684,7 +1654,6 @@
                 renderBooks();
                 modal.remove();
                 showToast('分类已更新');
-                if (state.settings.autoSync) syncToGitHub();
             });
         }
 
@@ -1696,251 +1665,113 @@
         });
 
         document.getElementById('saveSettings').addEventListener('click', async () => {
-            state.settings.githubUsername = document.getElementById('githubUsername').value.trim();
-            state.settings.githubRepo = document.getElementById('githubRepo').value.trim();
-            state.settings.githubToken = document.getElementById('githubToken').value.trim();
-            state.settings.autoSync = document.getElementById('autoSync').checked;
             state.settings.fontSize = parseInt(document.getElementById('fontSizeSetting').value);
 
             await dbPut('settings', { key: 'config', value: state.settings });
             updateSyncStatus();
             settingsModal.classList.remove('active');
             showToast('设置已保存');
-
-            if (state.settings.githubToken && state.settings.githubRepo && state.settings.githubUsername) {
-                syncFromGitHub();
-            }
         });
 
         function loadSettingsForm() {
-            document.getElementById('githubUsername').value = state.settings.githubUsername || '';
-            document.getElementById('githubRepo').value = state.settings.githubRepo || '';
-            document.getElementById('githubToken').value = state.settings.githubToken || '';
-            document.getElementById('autoSync').checked = state.settings.autoSync || false;
             document.getElementById('fontSizeSetting').value = state.settings.fontSize || 16;
         }
 
         function updateSyncStatus() {
-            const connected = !!(state.settings.githubToken && state.settings.githubRepo && state.settings.githubUsername);
-            if (connected) {
-                syncStatus.classList.add('connected');
-                syncStatusText.textContent = `已连接 ${state.settings.githubRepo}`;
-            } else {
-                syncStatus.classList.remove('connected');
-                syncStatusText.textContent = '未连接 GitHub';
-            }
+            syncStatus.classList.add('connected');
+            syncStatusText.textContent = `已连接 ${state.repo.name}`;
         }
 
         // GitHub API Integration
-        function getGitHubHeaders() {
-            return {
-                'Authorization': `token ${state.settings.githubToken}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            };
-        }
-
         async function syncFromGitHub() {
-            if (!state.settings.githubToken || !state.settings.githubRepo || !state.settings.githubUsername) {
-                showToast('请先配置 GitHub', 'error');
-                return;
-            }
-
             const syncBtn = document.getElementById('syncBtn');
             syncBtn.style.opacity = '0.5';
             syncBtn.disabled = true;
 
             try {
-                // 1. Get metadata
-                const metaRes = await fetch(
-                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
-                    { headers: getGitHubHeaders() }
-                );
+                const repoApiBase = `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`;
                 
-                if (metaRes.ok) {
-                    const metaData = await metaRes.json();
-                    const metaContent = JSON.parse(atob(metaData.content));
-                    
-                    if (metaContent.categories) {
-                        state.categories = metaContent.categories;
-                        for (const cat of state.categories) {
-                            await dbPut('categories', cat);
-                        }
+                // 1. List books directory
+                const listRes = await fetch(`${repoApiBase}/contents/books`);
+                if (!listRes.ok) {
+                    if (listRes.status === 404) {
+                        showToast('仓库中还没有 books 目录', 'error');
+                    } else {
+                        throw new Error(`GitHub API error: ${listRes.status}`);
                     }
-                    if (metaContent.books) {
-                        for (const bookMeta of metaContent.books) {
-                            // Try to fetch book content from repository
-                            const bookRes = await fetch(
-                                `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/books/${encodeURIComponent(bookMeta.filename)}`,
-                                { headers: getGitHubHeaders() }
-                            );
-                            if (bookRes.ok) {
-                                const bookData = await bookRes.json();
-                                const content = atob(bookData.content);
-                                const existing = state.books.find(b => b.id === bookMeta.id);
-                                if (existing) {
-                                    existing.content = content;
-                                    existing.title = bookMeta.title;
-                                    existing.categoryId = bookMeta.categoryId;
-                                    existing.progress = bookMeta.progress || existing.progress;
-                                    existing.scrollPosition = bookMeta.scrollPosition || existing.scrollPosition;
-                                    existing.updatedAt = bookMeta.updatedAt;
-                                    await dbPut('books', existing);
-                                } else {
-                                    await dbPut('books', {
-                                        id: bookMeta.id,
-                                        title: bookMeta.title,
-                                        description: bookMeta.description,
-                                        content: content,
-                                        size: content.length,
-                                        categoryId: bookMeta.categoryId,
-                                        progress: bookMeta.progress || 0,
-                                        scrollPosition: bookMeta.scrollPosition || 0,
-                                        createdAt: bookMeta.createdAt,
-                                        updatedAt: bookMeta.updatedAt,
-                                        lastReadAt: bookMeta.lastReadAt
-                                    });
-                                    state.books.push({
-                                        id: bookMeta.id,
-                                        title: bookMeta.title,
-                                        description: bookMeta.description,
-                                        content: content,
-                                        size: content.length,
-                                        categoryId: bookMeta.categoryId,
-                                        progress: bookMeta.progress || 0,
-                                        scrollPosition: bookMeta.scrollPosition || 0,
-                                        createdAt: bookMeta.createdAt,
-                                        updatedAt: bookMeta.updatedAt,
-                                        lastReadAt: bookMeta.lastReadAt
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    renderCategories();
-                    renderBooks();
-                    showToast('已从 GitHub 同步');
-                } else if (metaRes.status === 404) {
-                    showToast('GitHub 仓库为空，将本地数据同步上去', 'error');
-                    await syncToGitHub();
-                } else {
-                    throw new Error(`GitHub API error: ${metaRes.status}`);
+                    return;
                 }
+                const files = await listRes.json();
+                const htmlFiles = files.filter(f => f.type === 'file' && (f.name.endsWith('.html') || f.name.endsWith('.htm')));
+
+                // 2. Try to load metadata for progress
+                let metaContent = null;
+                try {
+                    const metaRes = await fetch(`${repoApiBase}/contents/reader-metadata.json`);
+                    if (metaRes.ok) {
+                        const metaData = await metaRes.json();
+                        metaContent = JSON.parse(atob(metaData.content));
+                    }
+                } catch (e) {
+                    console.log('No metadata found');
+                }
+
+                if (metaContent && metaContent.categories) {
+                    state.categories = metaContent.categories;
+                    for (const cat of state.categories) {
+                        await dbPut('categories', cat);
+                    }
+                }
+
+                const bookMetas = metaContent && metaContent.books ? metaContent.books : [];
+                let loadedCount = 0;
+
+                for (const file of htmlFiles) {
+                    const bookRes = await fetch(`${repoApiBase}/contents/books/${encodeURIComponent(file.name)}`);
+                    if (!bookRes.ok) continue;
+                    const bookData = await bookRes.json();
+                    const content = atob(bookData.content);
+                    const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
+                    const description = extractDescription(content);
+                    const id = file.name.replace(/\.html?$/, '');
+                    const meta = bookMetas.find(b => b.id === id) || {};
+                    
+                    const existing = state.books.find(b => b.id === id);
+                    if (existing) {
+                        existing.content = content;
+                        existing.title = title;
+                        existing.description = description;
+                        existing.size = content.length;
+                        existing.categoryId = meta.categoryId || existing.categoryId;
+                        existing.progress = meta.progress || existing.progress || 0;
+                        existing.scrollPosition = meta.scrollPosition || existing.scrollPosition || 0;
+                        existing.updatedAt = Date.now();
+                        await dbPut('books', existing);
+                    } else {
+                        const book = {
+                            id,
+                            title,
+                            description,
+                            content,
+                            size: content.length,
+                            categoryId: meta.categoryId || 'uncategorized',
+                            progress: meta.progress || 0,
+                            scrollPosition: meta.scrollPosition || 0,
+                            createdAt: meta.createdAt || Date.now(),
+                            updatedAt: Date.now(),
+                            lastReadAt: meta.lastReadAt || null
+                        };
+                        await dbPut('books', book);
+                        state.books.push(book);
+                    }
+                    loadedCount++;
+                }
+
+                renderCategories();
+                renderBooks();
+                showToast(`已从 GitHub 加载 ${loadedCount} 本书籍`);
             } catch (err) {
                 console.error('Sync error:', err);
-                showToast('同步失败: ' + err.message, 'error');
-            } finally {
-                syncBtn.style.opacity = '1';
-                syncBtn.disabled = false;
-            }
-        }
-
-        async function syncToGitHub() {
-            if (!state.settings.githubToken || !state.settings.githubRepo || !state.settings.githubUsername) {
-                showToast('请先配置 GitHub', 'error');
-                return;
-            }
-
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.style.opacity = '0.5';
-            syncBtn.disabled = true;
-
-            try {
-                // 1. Get default branch and SHA
-                const repoRes = await fetch(
-                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}`,
-                    { headers: getGitHubHeaders() }
-                );
-                if (!repoRes.ok) throw new Error('无法访问仓库');
-                const repoData = await repoRes.json();
-                const branch = repoData.default_branch || 'main';
-
-                // 2. Upload each book as HTML file
-                const bookMetas = [];
-                for (const book of state.books) {
-                    const filename = `${book.id}.html`;
-                    const path = `books/${filename}`;
-                    const contentEncoded = btoa(unescape(encodeURIComponent(book.content)));
-                    
-                    // Check if file exists to get SHA
-                    const existingRes = await fetch(
-                        `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/${path}`,
-                        { headers: getGitHubHeaders() }
-                    );
-                    let sha = null;
-                    if (existingRes.ok) {
-                        const existingData = await existingRes.json();
-                        sha = existingData.sha;
-                    }
-
-                    const uploadRes = await fetch(
-                        `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/${path}`,
-                        {
-                            method: 'PUT',
-                            headers: getGitHubHeaders(),
-                            body: JSON.stringify({
-                                message: `Update book: ${book.title}`,
-                                content: contentEncoded,
-                                sha: sha,
-                                branch: branch
-                            })
-                        }
-                    );
-                    if (!uploadRes.ok && uploadRes.status !== 422) {
-                        throw new Error(`上传失败: ${uploadRes.status}`);
-                    }
-
-                    bookMetas.push({
-                        id: book.id,
-                        title: book.title,
-                        description: book.description,
-                        filename,
-                        categoryId: book.categoryId,
-                        progress: book.progress,
-                        scrollPosition: book.scrollPosition,
-                        createdAt: book.createdAt,
-                        updatedAt: book.updatedAt,
-                        lastReadAt: book.lastReadAt
-                    });
-                }
-
-                // 3. Upload metadata
-                const metadata = {
-                    version: 1,
-                    updatedAt: Date.now(),
-                    categories: state.categories,
-                    books: bookMetas
-                };
-                const metaEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(metadata, null, 2))));
-                
-                const existingMetaRes = await fetch(
-                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
-                    { headers: getGitHubHeaders() }
-                );
-                let metaSha = null;
-                if (existingMetaRes.ok) {
-                    const existingMeta = await existingMetaRes.json();
-                    metaSha = existingMeta.sha;
-                }
-
-                const metaUploadRes = await fetch(
-                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
-                    {
-                        method: 'PUT',
-                        headers: getGitHubHeaders(),
-                        body: JSON.stringify({
-                            message: 'Update reader metadata',
-                            content: metaEncoded,
-                            sha: metaSha,
-                            branch: branch
-                        })
-                    }
-                );
-                if (!metaUploadRes.ok) throw new Error('元数据同步失败');
-
-                showToast('已同步到 GitHub');
-            } catch (err) {
-                console.error('Sync to GitHub error:', err);
                 showToast('同步失败: ' + err.message, 'error');
             } finally {
                 syncBtn.style.opacity = '1';
@@ -1978,10 +1809,8 @@
             renderCategories();
             renderBooks();
 
-            // Auto-sync if configured
-            if (state.settings.autoSync && state.settings.githubToken) {
-                syncFromGitHub();
-            }
+            // Auto-sync from public GitHub repository on load
+            syncFromGitHub();
         }
 
         init().catch(err => {
