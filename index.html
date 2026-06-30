@@ -1956,9 +1956,7 @@
             readerInner.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.sandbox = 'allow-same-origin';
-            iframe.style.width = '100%';
-            iframe.style.minHeight = '80vh';
-            iframe.style.border = 'none';
+            iframe.style.cssText = 'width:100%;height:100vh;border:none;display:block;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99;background:white;';
             readerInner.appendChild(iframe);
 
             const blob = new Blob([book.content], { type: 'text/html' });
