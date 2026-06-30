@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ERP 智能管家 - 产品说明书</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        html { scroll-behavior: smooth; }
+        
+        /* 目录侧边栏 */
+        .toc-sidebar { position: sticky; top: 2rem; max-height: calc(100vh - 4rem); overflow-y: auto; }
+        .toc-sidebar a { display: block; padding: 0.35rem 0; color: #4b5563; text-decoration: none; transition: color 0.2s; font-size: 0.875rem; }
+        .toc-sidebar a:hover { color: #f97316; }
+        .toc-sidebar .sub-menu { padding-left: 1rem; border-left: 2px solid #fed7aa; margin-top: 0.25rem; margin-bottom: 0.5rem; }
+        
+        /* 卡片及通用样式 */
+        .mock-bg { background-image: radial-gradient(#d1d5db 1px, transparent 1px); background-size: 10px 10px; }
+        .chips-scroll::-webkit-scrollbar { display: none; }
+        .chips-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .flow-line { position: absolute; left: 15px; top: 30px; bottom: 10px; width: 2px; background-color: #fdba74; z-index: 0; }
+        .flow-step { position: relative; z-index: 1; }
+
+        /* ====== 流程图专属动效与样式 ====== */
+        .role-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #cbd5e1;
+        }
+
+        /* 任务列表小圆点颜色自定义 */
+        .task-list li::before {
+            content: "•";
+            color: #3b82f6; /* Blue-500 */
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+        .task-list.repair-tasks li::before { color: #ef4444; }
+        .task-list.qa-tasks li::before { color: #10b981; }
+        
+        /* 连线文字标签样式 */
+        .line-label {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        /* 流动虚线动画 */
+        .path-animated {
+            stroke-dasharray: 6;
+            animation: dash 1.5s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -12; }
+        }
+        
+        /* 隐藏水平滚动条但保留功能 */
+        .hide-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+            border-radius: 4px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* ====== 全屏预览模式样式 ====== */
+        .is-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            z-index: 9999 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc !important; /* 浅色背景增强沉浸感 */
+        }
+        .is-fullscreen .flowchart-inner-scroll {
+            flex: 1;
+            overflow: auto;
+            height: 100%;
+        }
+        .fs-btn { 
+            transition: all 0.2s ease; 
+            backdrop-filter: blur(4px);
+            background-color: rgba(255,255,255,0.9);
+        }
+        .fs-btn:hover { 
+            background-color: #fff; 
+            color: #3b82f6; 
+            transform: scale(1.05);
+        }
+
+        /* ====== 验机中心看板特有样式 ====== */
+        .flow-arrow-x {
+            animation: pulse-arrow-x 2s infinite;
+        }
+        @keyframes pulse-arrow-x {
+            0% { transform: translateX(0); opacity: 0.8; }
+            50% { transform: translateX(5px); opacity: 1; }
+            100% { transform: translateX(0); opacity: 0.8; }
+        }
+        .bg-pattern {
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 leading-relaxed pb-20">
+
+    <!-- 隐藏的 SVG 图标库 -->
+    <svg width="0" height="0" class="hidden">
+        <defs>
+            <g id="icon-box"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-search"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-shopping-cart"><circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="2"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-receipt"><path d="M4 2v20l2-2 2 2 2-2 2 2-2 2-2 2 2-2 2 2-2 2 2-2 2 2V2L18 4l-2-2-2 2-2-2-2 2-2-2-2 2-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="14" x2="8" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="10" x2="8" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-truck"><rect x="1" y="3" width="15" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 8h4l3 3v5h-7V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5.5" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18.5" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-tag"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="7" y1="7" x2="7.01" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-building"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4M9 7h6M9 11h6M9 15h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></g>
+            <g id="icon-plus-circle"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-edit"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-list"><line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="3.01" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="12" x2="3.01" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="18" x2="3.01" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-trash-can"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 11v6m4-6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" fill="none" stroke="currentColor" stroke-width="1.8"/></g>
+            <g id="icon-xmark"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+            <g id="icon-flow"><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/></g>
+            
+            <!-- 新增：全屏与退出全屏图标 -->
+            <g id="icon-expand"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g id="icon-compress"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+        </defs>
+    </svg>
+
+    <div class="max-w-[1400px] mx-auto py-12 px-6 flex gap-8">
+        
+        <!-- 左侧导航侧边栏 -->
+        <aside class="w-64 hidden xl:block shrink-0">
+            <div class="toc-sidebar bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-900 mb-4 text-base">业务大纲索引</h3>
+                
+                <!-- 目录：全景流程图入口 -->
+                <a href="#flowchart" class="font-bold text-blue-600 text-sm mb-3 flex items-center gap-2 hover:text-blue-700">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><use href="#icon-flow"/></svg> 业务全景角色流程图
+                </a>
+                
+                <!-- 新增：验机中心业务流程图入口 -->
+                <a href="#inspection-flowchart" class="font-bold text-teal-600 text-sm mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 hover:text-teal-700">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><use href="#icon-flow"/></svg> 验机中心业务流程图
+                </a>
+
+                <div class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">一、业务类</div>
+                <a href="#biz-1" class="font-bold">1. 通用场景</a>
+                <div class="sub-menu">
+                    <a href="#biz-1-1">1.1 物品接收</a>
+                    <a href="#biz-1-2">1.2 物品移交</a>
+                    <a href="#biz-1-3">1.3 物品查询</a>
+                    <a href="#biz-1-4">1.4 手机盘点</a>
+                </div>
+
+                <a href="#biz-2" class="font-bold mt-2">2. 初始化</a>
+                <div class="sub-menu">
+                    <a href="#biz-2-1">2.1 仓库管理 (增删改)</a>
+                    <a href="#biz-2-2">2.2 标签管理</a>
+                    <a href="#biz-2-3">2.3 供应商管理</a>
+                    <a href="#biz-2-4">2.4 销售客户管理</a>
+                    <a href="#biz-2-5">2.5 送修客户管理</a>
+                </div>
+
+                <a href="#biz-3" class="font-bold mt-2">3. 采购业务</a>
+                <div class="sub-menu">
+                    <a href="#biz-3-1">3.1 新增采购单</a>
+                    <a href="#biz-3-2">3.2 查询采购单</a>
+                    <a href="#biz-3-3">3.3 签收入库</a>
+                    <a href="#biz-3-4">3.4 打印标签</a>
+                    <a href="#biz-3-5">3.5 新建采购售后单</a>
+                    <a href="#biz-3-6">3.6 处理采购售后</a>
+                </div>
+
+                <a href="#biz-4" class="font-bold mt-2">4. 库管业务</a>
+                <div class="sub-menu">
+                    <a href="#biz-4-1">4.1 仓库调拨</a>
+                    <a href="#biz-4-2">4.2 销售出库（修改销售单）</a>
+                    <a href="#biz-4-3">4.3 送修出库</a>
+                    <a href="#biz-4-4">4.4 采购售后出库（修改采购售后单）</a>
+                    <a href="#biz-4-5">4.5 销售售后出库（修改销售售后单）</a>
+                    <a href="#biz-4-6">4.6 仅出库</a>
+                    <a href="#biz-4-7">4.7 一键叫件</a>
+                </div>
+
+                <a href="#biz-5" class="font-bold mt-2">5. 质检业务</a>
+                
+                <a href="#biz-6" class="font-bold mt-2">6. 维修业务</a>
+                <div class="sub-menu">
+                    <a href="#biz-6-1">6.1 创建维修单</a>
+                    <a href="#biz-6-2">6.2 修改维修单（填写维修情况）</a>
+                </div>
+
+                <a href="#biz-7" class="font-bold mt-2">7. 智能货架</a>
+                <div class="sub-menu">
+                    <a href="#biz-7-1">7.1 控制智能货架亮灯查询手机位置</a>
+                    <a href="#biz-7-2">7.2 智能货架看板</a>
+                </div>
+
+                <a href="#biz-8" class="font-bold mt-2">8. 销售业务</a>
+                <div class="sub-menu">
+                    <a href="#biz-8-1">8.1 新建销售单</a>
+                    <a href="#biz-8-2">8.2 修改销售单（重复）</a>
+                </div>
+                
+                <a href="#biz-9" class="font-bold mt-2">9. 其他</a>
+                <div class="sub-menu">
+                    <a href="#biz-9-1">9.1 移交记录</a>
+                    <a href="#biz-9-2">9.2 签收记录</a>
+                </div>
+
+                <div class="text-xs font-bold text-indigo-400 mt-6 mb-2 uppercase tracking-wider border-t pt-4">二、非业务类</div>
+                <a href="#nonbiz-1" class="font-bold text-indigo-700">1. 初始化设置引导</a>
+            </div>
+        </aside>
+
+        <main class="flex-1 min-w-0">
+            <header class="mb-10 border-b border-gray-200 pb-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl mb-4 text-3xl shadow-inner">🤖</div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-3">AI ERP 智能管家 - 产品说明书</h1>
+                <p class="text-sm text-gray-500">可视化工作流程图 & 1:1 UI 交互卡片映射对照表</p>
+            </header>
+
+            <!-- 顶部总目录 (适配移动端) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-12 xl:hidden">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><svg viewBox="0 0 24 24" width="18" height="18" class="text-orange-500"><use href="#icon-list"/></svg> 本文档目录 (Table of Contents)</h2>
+                
+                <a href="#flowchart" class="font-bold text-blue-600 block mb-3 flex items-center gap-1.5"><svg viewBox="0 0 24 24" width="16" height="16"><use href="#icon-flow"/></svg> 业务全景角色流程图</a>
+                
+                <!-- 移动端新增目录入口 -->
+                <a href="#inspection-flowchart" class="font-bold text-teal-600 block mb-5 border-b border-teal-100 pb-2 flex items-center gap-1.5"><svg viewBox="0 0 24 24" width="16" height="16"><use href="#icon-flow"/></svg> 验机中心业务流程图</a>
+
+                <h3 class="font-bold text-orange-600 mb-3 border-b border-orange-100 pb-1">一、业务类</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <a href="#biz-1" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">1. 通用场景</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li></ul>
+                        <a href="#biz-2" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">2. 初始化</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>仓库管理 (增删改)</li><li>标签管理</li><li>供应商管理</li><li>销售客户管理</li><li>送修客户管理</li></ul>
+                        <a href="#biz-3" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">3. 采购业务</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>新增采购单</li><li>查询采购单</li><li>签收入库</li><li>打印标签</li><li>新建采购售后单</li><li>处理采购售后</li></ul>
+                        <a href="#biz-4" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">4. 库管业务</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1"><li>仓库调拨</li><li>销售出库（修改销售单）</li><li>送修出库</li><li>采购售后出库（修改采购售后单）</li><li>销售售后出库（修改销售售后单）</li><li>仅出库</li><li>一键叫件</li></ul>
+                    </div>
+                    <div>
+                        <a href="#biz-5" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">5. 质检业务</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>(暂无内容)</li></ul>
+                        <a href="#biz-6" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">6. 维修业务</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>创建维修单</li><li>修改维修单（填写维修情况）</li></ul>
+                        <a href="#biz-7" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">7. 智能货架</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>控制智能货架亮灯查询手机位置</li><li>智能货架看板</li></ul>
+                        <a href="#biz-8" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">8. 销售业务</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1 mb-3"><li>新建销售单</li><li>修改销售单（重复）</li></ul>
+                        <a href="#biz-9" class="font-bold text-gray-800 hover:text-orange-500 block mb-1">9. 其他</a>
+                        <ul class="text-gray-500 pl-4 list-disc space-y-1"><li>移交记录</li><li>签收记录</li></ul>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-indigo-600 mt-6 mb-3 border-b border-indigo-100 pb-1">二、非业务类</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <a href="#nonbiz-1" class="font-bold text-gray-800 hover:text-indigo-500 block mb-1">1. 初始化设置引导</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 流程图板块嵌入在文档最前方 -->
+            <section id="flowchart" class="mb-20 pt-4">
+                <div class="mb-6 border-l-4 border-blue-500 pl-4 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">业务全景角色流程图</h2>
+                        <p class="text-slate-500 text-sm mt-1">包含采购、签收、分发、维修流转及质检上架的完整作业链</p>
+                    </div>
+                </div>
+                
+                <!-- 外层包裹器：用于实现全屏功能 -->
+                <div id="flowchart-fullscreen-wrapper" class="relative w-full bg-white shadow-md border border-slate-200 rounded-2xl mx-auto transition-all duration-300">
+                    
+                    <!-- 全屏切换按钮 -->
+                    <button id="toggle-fullscreen-btn" class="fs-btn absolute top-4 right-4 z-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg shadow-sm flex items-center gap-2 text-sm font-bold bg-white/90 hover:bg-white">
+                        <svg viewBox="0 0 24 24" width="16" height="16" id="fs-icon"><use href="#icon-expand"/></svg>
+                        <span id="fs-text">全屏预览</span>
+                    </button>
+
+                    <!-- 内部滚动区域 -->
+                    <div class="w-full overflow-x-auto hide-scrollbar flowchart-inner-scroll rounded-2xl" style="min-height: 600px;">
+                        <div class="relative min-w-max px-12 py-24" id="flow-container">
+                            
+                            <!-- SVG连线层 (铺在下层) -->
+                            <svg id="lines-svg" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 0; overflow: visible;">
+                                <defs>
+                                    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                                    </marker>
+                                    <marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                                    </marker>
+                                    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                                    </marker>
+                                </defs>
+                            </svg>
+
+                            <!-- 连线文字标签容器 -->
+                            <div id="labels-container" class="absolute inset-0 pointer-events-none" style="z-index: 10;"></div>
+
+                            <!-- 卡片网格布局: 10列2行，横向推进 -->
+                            <div class="grid gap-x-16 gap-y-24 relative z-10" style="grid-template-columns: repeat(10, minmax(260px, 1fr));">
+                                
+                                <!-- ROW 1: 初始化与核心主线流转 -->
+                                <div class="col-start-1 row-start-1 flex justify-center" id="node-init">
+                                    <div class="role-card bg-slate-50 w-64 rounded-2xl shadow-sm border border-slate-300 relative mt-8 p-5 pt-8 flex flex-col items-center">
+                                        <div class="w-16 h-16 bg-white shadow-sm text-slate-600 rounded-full flex items-center justify-center absolute -top-8 left-1/2 transform -translate-x-1/2 border-4 border-slate-50">
+                                            <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        </div>
+                                        <div class="text-center mt-2 w-full">
+                                            <h3 class="text-lg font-bold text-slate-800">系统初始化设置</h3>
+                                            <div class="w-12 h-1 bg-slate-300 mx-auto my-3 rounded-full"></div>
+                                        </div>
+                                        <div class="flex flex-col gap-2 w-full mt-2">
+                                            <span class="inline-flex justify-center items-center px-3 py-2 rounded-md bg-white border border-slate-200 text-sm text-slate-600 font-medium shadow-sm">创建管理</span>
+                                            <span class="inline-flex justify-center items-center px-3 py-2 rounded-md bg-white border border-slate-200 text-sm text-slate-600 font-medium shadow-sm">创建仓库</span>
+                                            <span class="inline-flex justify-center items-center px-3 py-2 rounded-md bg-white border border-slate-200 text-sm text-slate-600 font-medium shadow-sm">创建供应商</span>
+                                            <span class="inline-flex justify-center items-center px-3 py-2 rounded-md bg-white border border-slate-200 text-sm text-slate-600 font-medium shadow-sm">创建销售客户</span>
+                                            <span class="inline-flex justify-center items-center px-3 py-2 rounded-md bg-white border border-slate-200 text-sm text-slate-600 font-medium shadow-sm">创建送修客户</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-2 row-start-1 flex justify-center" id="node-purchase">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-blue-50 flex items-center justify-center text-4xl pb-1">👩‍💼</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">采购员</h3>
+                                            <div class="w-12 h-1 bg-blue-100 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>新建采购单</li>
+                                            <li>查询采购单</li>
+                                            <li>新建采购售后单</li>
+                                            <li>处理采购售后</li>
+                                            <li>查看签收记录</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-start-3 row-start-1 flex justify-center" id="node-receiver">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-purple-50 flex items-center justify-center text-4xl pb-1">👷‍♂️</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">快递签收员</h3>
+                                            <div class="w-12 h-1 bg-blue-100 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>签收入库</li>
+                                            <li>打印标签</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-4 row-start-1 flex justify-center" id="node-dispatcher">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-lg border border-blue-200 relative mt-8 p-5 pt-10 ring-4 ring-blue-50 ring-offset-2">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-100 flex items-center justify-center text-4xl pb-1">👨‍🏭</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">库管（初始分拣）</h3>
+                                            <div class="w-12 h-1 bg-blue-400 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>仓库调拨</li>
+                                            <li>销售出库（修改销售单）</li>
+                                            <li>送修出库</li>
+                                            <li>采购售后出库（修改采购售后单）</li>
+                                            <li>销售售后出库（修改销售售后单）</li>
+                                            <li>仅出库</li>
+                                            <li>一键叫件</li>
+                                            <li>创建送修单</li>
+                                            <li>修改送修单</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-5 row-start-1 flex justify-center" id="node-qc">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-green-50 flex items-center justify-center text-4xl pb-1">🕵️‍♂️</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">质检员</h3>
+                                            <div class="w-12 h-1 bg-green-100 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list qa-tasks text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-6 row-start-1 flex justify-center" id="node-photo">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-yellow-50 flex items-center justify-center text-4xl pb-1">🧑‍🎨</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">拍照员</h3>
+                                            <div class="w-12 h-1 bg-yellow-200 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list qa-tasks text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-7 row-start-1 flex justify-center" id="node-shelver">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <!-- 使用操作员/工程师图标，体现操作智能货架的独立职责 -->
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-cyan-50 flex items-center justify-center text-4xl pb-1">🧑‍💻</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">上架员</h3>
+                                            <div class="w-12 h-1 bg-cyan-200 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>控制智能货架亮灯查询手机位置</li>
+                                            <li>智能货架看板</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-8 row-start-1 flex justify-center" id="node-sales-dispatcher">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-lg border border-indigo-200 relative mt-8 p-5 pt-10 ring-4 ring-indigo-50 ring-offset-2">
+                                        <div class="absolute -top-3 -right-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border-2 border-white flex items-center gap-1 z-10">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                            可由智能体替代
+                                        </div>
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-indigo-50 flex items-center justify-center text-4xl pb-1">👨‍🏭</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">库管（分发销售）</h3>
+                                            <p class="text-xs text-indigo-600 font-medium mt-1 mb-2 bg-indigo-50 rounded-full inline-block px-2.5 py-0.5">🚀 智能分发智能体 (未来)</p>
+                                            <div class="w-12 h-1 bg-indigo-400 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>仓库调拨</li>
+                                            <li>销售出库（修改销售单）</li>
+                                            <li>送修出库</li>
+                                            <li>采购售后出库（修改采购售后单）</li>
+                                            <li>销售售后出库（修改销售售后单）</li>
+                                            <li>仅出库</li>
+                                            <li>一键叫件</li>
+                                            <li>创建送修单</li>
+                                            <li>修改送修单</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-9 row-start-1 flex justify-center" id="node-sales">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-blue-50 flex items-center justify-center text-4xl pb-1">👨‍💼</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">销售员</h3>
+                                            <div class="w-12 h-1 bg-blue-100 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>新建销售单</li>
+                                            <li>修改销售单</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-start-10 row-start-1 flex justify-center" id="node-packer">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-100 flex items-center justify-center text-4xl pb-1">👨‍🏭</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">库管（记录出库）</h3>
+                                            <div class="w-12 h-1 bg-slate-300 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>仓库调拨</li>
+                                            <li>销售出库（修改销售单）</li>
+                                            <li>送修出库</li>
+                                            <li>采购售后出库（修改采购售后单）</li>
+                                            <li>销售售后出库（修改销售售后单）</li>
+                                            <li>仅出库</li>
+                                            <li>一键叫件</li>
+                                            <li>创建送修单</li>
+                                            <li>修改送修单</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                        <!-- 新增验机中心板块 -->
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">验机中心</p>
+                                            <ul class="task-list text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>验机中心看板</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ROW 2: 维修分支 -->
+                                <div class="col-start-4 row-start-2 flex justify-center" id="node-int-repair">
+                                    <div class="role-card bg-white w-64 rounded-2xl shadow-md border border-slate-100 relative mt-8 p-5 pt-10 ring-2 ring-red-50 ring-offset-2">
+                                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm absolute -top-10 left-1/2 transform -translate-x-1/2 bg-red-50 flex items-center justify-center text-4xl pb-1">👨‍🔧</div>
+                                        <div class="text-center">
+                                            <h3 class="text-lg font-bold text-slate-800">维修员</h3>
+                                            <div class="w-12 h-1 bg-red-100 mx-auto my-2 rounded-full"></div>
+                                        </div>
+                                        <ul class="task-list repair-tasks text-sm text-slate-600 space-y-1.5 mt-4 pl-4">
+                                            <li>创建维修单</li>
+                                            <li>修改维修单</li>
+                                        </ul>
+                                        <div class="mt-3 pt-3 border-t border-slate-100">
+                                            <p class="text-xs font-semibold text-slate-400 mb-1.5 uppercase">通用操作</p>
+                                            <ul class="task-list repair-tasks text-xs text-slate-500 space-y-1 pl-4">
+                                                <li>物品接收</li><li>物品移交</li><li>物品查询</li><li>手机盘点</li><li>查看移交记录</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= 新增板块：验机中心业务流程图 ================= -->
+            <section id="inspection-flowchart" class="mb-20 pt-4">
+                <div class="mb-6 border-l-4 border-teal-500 pl-4 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">验机中心业务流程图</h2>
+                        <p class="text-slate-500 text-sm mt-1">二手设备流转横向全链路业务与数字孪生展示</p>
+                    </div>
+                </div>
+                
+                <!-- 验机中心外层包裹器：用于实现全屏功能 -->
+                <div id="inspection-fullscreen-wrapper" class="relative w-full bg-gray-50 bg-pattern shadow-md border border-slate-200 rounded-2xl mx-auto overflow-hidden flex flex-col transition-all duration-300">
+                    
+                    <!-- 全屏切换按钮 -->
+                    <button id="toggle-inspection-fs-btn" class="fs-btn absolute top-4 right-4 z-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg shadow-sm flex items-center gap-2 text-sm font-bold bg-white/90 hover:bg-white">
+                        <svg viewBox="0 0 24 24" width="16" height="16" id="ins-fs-icon"><use href="#icon-expand"/></svg>
+                        <span id="ins-fs-text">全屏预览</span>
+                    </button>
+
+                    <!-- 页面标题 -->
+                    <div class="text-center py-10 flex-shrink-0">
+                        <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight sm:text-4xl">
+                            二手设备流转业务流程图
+                        </h3>
+                        <p class="mt-4 text-lg text-gray-500">
+                            横向全链路业务与数字孪生展示
+                        </p>
+                    </div>
+
+                    <!-- 横向主流程容器 -->
+                    <div class="flex-1 w-full overflow-x-auto pb-12 px-8 hide-scrollbar flowchart-inner-scroll" style="min-height: 500px;">
+                        <div class="min-w-[1750px] h-full flex items-center justify-center gap-4 mx-auto">
+                            
+                            <!-- 1. 业务源头 (Source Channels) -->
+                            <div class="flex flex-col gap-8 w-56 flex-shrink-0">
+                                <!-- C端渠道 -->
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border border-green-100 flex flex-col items-center">
+                                    <div class="bg-green-100 p-2 rounded-full text-green-600 mb-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    </div>
+                                    <span class="text-base font-bold text-gray-800 mb-2">C端客户</span>
+                                    <div class="w-full text-center bg-green-50 text-green-700 py-2 rounded-lg font-semibold text-sm border border-green-200">
+                                        bot速收
+                                    </div>
+                                </div>
+
+                                <!-- B端渠道 -->
+                                <div class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100 flex flex-col items-center">
+                                    <div class="bg-orange-100 p-2 rounded-full text-orange-600 mb-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <span class="text-base font-bold text-gray-800 mb-2">B端客户</span>
+                                    <div class="w-full text-center bg-orange-50 text-orange-700 py-2 rounded-lg font-semibold text-sm border border-orange-200">
+                                        壹准保卖
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 汇聚箭头 -->
+                            <div class="flex-shrink-0 flow-arrow-x text-blue-400 mx-1">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </div>
+
+                            <!-- 2. 验机中心 (Inspection Center - 线性流程) -->
+                            <div class="flex-1 min-w-[700px] bg-white rounded-3xl shadow-lg border-2 border-blue-100 overflow-hidden flex flex-col">
+                                <!-- 头部标签 -->
+                                <div class="bg-blue-600 px-6 py-3 flex items-center justify-between">
+                                    <div class="flex items-center space-x-2 text-white">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                        <h2 class="text-xl font-bold tracking-wide">验机中心内部流转</h2>
+                                    </div>
+                                    <span class="bg-blue-500 text-blue-100 text-xs py-1 px-3 rounded-full">流水线作业</span>
+                                </div>
+
+                                <!-- 内部单向流程 -->
+                                <div class="p-6 pb-24 flex items-start justify-between gap-2 h-full bg-blue-50/30">
+                                    
+                                    <!-- 步骤1: 签收入库 -->
+                                    <div class="bg-white border border-blue-200 rounded-xl p-4 w-48 flex flex-col items-center shadow-sm relative z-10">
+                                        <div class="bg-blue-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">签收入库</h4>
+                                        <div class="mt-3 text-xs text-blue-700 bg-blue-100 px-2 py-1.5 rounded w-full text-center font-medium border border-blue-200">
+                                            自动入库到虚拟库存
+                                        </div>
+                                        
+                                        <!-- 虚线下延：壹准任务看板说明 -->
+                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 flex flex-col items-center w-52 pointer-events-none">
+                                            <div class="h-10 border-l-2 border-dashed border-indigo-400"></div>
+                                            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-2.5 w-full shadow-sm text-center relative pointer-events-auto">
+                                                <div class="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-2.5 h-2.5 bg-indigo-100 border-2 border-indigo-400 rounded-full"></div>
+                                                <h5 class="text-indigo-800 font-bold text-xs mb-1 flex items-center justify-center">
+                                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                                    壹准任务看板
+                                                </h5>
+                                                <div class="text-[10px] text-indigo-600/90 leading-tight font-medium">
+                                                    管理内部流转: 待领取 ➔ 待质检...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤2: 质检 -->
+                                    <div class="bg-white border border-yellow-200 rounded-xl p-4 w-32 flex flex-col items-center shadow-sm relative z-10">
+                                        <div class="bg-yellow-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">质检</h4>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤3: 拍照 -->
+                                    <div class="bg-white border border-purple-200 rounded-xl p-4 w-32 flex flex-col items-center shadow-sm relative z-10">
+                                        <div class="bg-purple-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">拍照</h4>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤4: 上智能货架 -->
+                                    <div class="bg-white border border-indigo-200 rounded-xl p-4 w-40 flex flex-col items-center shadow-sm relative z-10">
+                                        <div class="bg-indigo-600 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg whitespace-nowrap">上智能货架</h4>
+                                        <div class="mt-3 text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded w-full text-center border border-indigo-100">
+                                            虚实同步就绪
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤5: 销售智能体 (Sales Agent) -->
+                                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 border border-green-200 rounded-xl p-4 w-44 flex flex-col items-center shadow-sm relative z-10 overflow-hidden">
+                                        <div class="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+                                        <div class="bg-green-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg whitespace-nowrap">销售智能体</h4>
+                                        <div class="mt-3 text-xs text-green-800 bg-white px-2 py-1.5 rounded w-full text-center font-medium border border-green-200 shadow-sm">
+                                            自动分发至拍机渠道
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤6: 订单发货 (Shipping) -->
+                                    <div class="bg-white border border-teal-200 rounded-xl p-4 w-52 flex flex-col items-center shadow-sm relative z-10 overflow-hidden">
+                                        <div class="absolute top-0 left-0 w-full h-1 bg-teal-500"></div>
+                                        <div class="bg-teal-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg whitespace-nowrap">订单发货</h4>
+                                        
+                                        <!-- 发货方式分支 -->
+                                        <div class="mt-3 flex w-full gap-2">
+                                            <!-- 自提发货 -->
+                                            <div class="flex-1 flex flex-col items-center justify-center bg-teal-50 border border-teal-100 rounded py-1.5 px-1 hover:bg-teal-100 transition-colors">
+                                                <svg class="w-4 h-4 text-teal-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                                <span class="text-[11px] text-teal-800 font-bold whitespace-nowrap">自提发货</span>
+                                            </div>
+                                            <!-- 快递发货 -->
+                                            <div class="flex-1 flex flex-col items-center justify-center bg-teal-50 border border-teal-100 rounded py-1.5 px-1 hover:bg-teal-100 transition-colors">
+                                                <svg class="w-4 h-4 text-teal-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                                                </svg>
+                                                <span class="text-[11px] text-teal-800 font-bold whitespace-nowrap">快递发货</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-gray-300 self-center mx-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+
+                                    <!-- 步骤7: 销售售后 (Sales After-sales) -->
+                                    <div class="bg-white border border-rose-200 rounded-xl p-4 w-44 flex flex-col items-center shadow-sm relative z-10 overflow-hidden">
+                                        <div class="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
+                                        <div class="bg-rose-500 text-white p-3 rounded-full mb-3 shadow-md">
+                                            <!-- 回退/售后 图标 -->
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg whitespace-nowrap">销售售后</h4>
+                                        
+                                        <!-- 售后细分标签 -->
+                                        <div class="mt-3 flex w-full gap-2">
+                                            <div class="flex-1 flex flex-col items-center justify-center bg-rose-50 border border-rose-100 rounded py-1.5 px-1 hover:bg-rose-100 transition-colors">
+                                                <span class="text-[11px] text-rose-800 font-bold whitespace-nowrap">退换管理</span>
+                                            </div>
+                                            <div class="flex-1 flex flex-col items-center justify-center bg-rose-50 border border-rose-100 rounded py-1.5 px-1 hover:bg-rose-100 transition-colors">
+                                                <span class="text-[11px] text-rose-800 font-bold whitespace-nowrap">异常处理</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- ========================================================================= -->
+            
+            <div class="mb-10 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-2xl p-6 border border-orange-100 text-center shadow-sm">
+                <h2 class="text-2xl font-black text-orange-600 tracking-widest">一、业务卡片对照与说明</h2>
+            </div>
+
+            <section id="biz-1" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">01</span> 通用场景</h2>
+                
+                <!-- 1.1 物品接收 -->
+                <div id="biz-1-1" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">1.1 物品接收 (入库)</h3></div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">涉及卡片</h4>
+                            <span class="inline-block bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-orange-200">入库签收单 (universal_receive_form)</span>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">交互工作流</h4>
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full">
+                                    <div class="text-[10px] text-gray-500 mb-1">用户意图 (User)</div>
+                                    <div class="text-sm font-medium">"帮我签收一下刚才的采购单。"</div>
+                                </div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-orange-50/50 p-3 rounded-lg border border-orange-100 w-full">
+                                    <div class="text-[10px] text-orange-500 mb-1">AI 解析与系统响应</div>
+                                    <div class="text-sm text-gray-700">解析意图，从库存检索后推送【入库签收单】卡片。</div>
+                                </div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-800 text-white border-2 border-white shadow-sm flex items-center justify-center text-xs shrink-0"><svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-check-circle"/></svg></div>
+                                <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 w-full">
+                                    <div class="text-[10px] text-gray-500 mb-1">数据流转 (System)</div>
+                                    <div class="text-sm text-gray-700">设备的 Owner 变更为自己，存入指定仓库。</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 w-full lg:w-[360px] bg-gray-50 mock-bg flex justify-center items-center shrink-0">
+                        <div class="bg-white p-3 rounded-xl border border-orange-200 shadow-md w-full max-w-[300px]">
+                            <div class="flex items-center gap-2 mb-2 border-b border-orange-100 pb-2">
+                                <div class="w-6 h-6 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center"><svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-box"/></svg></div>
+                                <h4 class="font-bold text-gray-800 text-[12px]">入库签收单</h4>
+                            </div>
+                            <div class="bg-orange-50 p-2 rounded-lg border border-orange-100 mb-2 text-[10px] text-orange-600 flex items-center gap-1">
+                                <svg viewBox="0 0 24 24" width="10" height="10"><use href="#icon-search"/></svg> 签收维度：刚才的采购单
+                            </div>
+                            <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-200 mb-2">
+                                <select class="w-full mb-2 bg-white border border-gray-200 text-[10px] rounded px-1.5 py-1.5 outline-none"><option>-- 批量分配仓库 --</option></select>
+                                <div class="bg-orange-50/30 border border-orange-300 p-2 rounded shadow-sm">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <span class="text-[11px] font-bold">华为 Mate 60 <div class="text-[9px] text-gray-500 font-mono font-normal">SN: SN002-1</div></span>
+                                        <span class="text-[8px] bg-amber-100 text-amber-700 px-1 rounded border border-amber-200 shrink-0">待收货</span>
+                                    </div>
+                                    <select class="w-full bg-white border border-orange-400 text-[10px] rounded px-1.5 py-1 outline-none"><option>总仓(A区)</option></select>
+                                </div>
+                            </div>
+                            <button class="w-full bg-orange-500 text-white rounded-lg py-1.5 text-[11px] font-bold">确认入库</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.2 物品移交 -->
+                <div id="biz-1-2" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">1.2 物品移交</h3></div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">涉及卡片</h4>
+                            <span class="inline-block bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-blue-200">物品移交确认单 (transfer_form)</span>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">交互工作流</h4>
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #93c5fd;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"把我这台坏手机交给小李。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-blue-50/50 p-3 rounded-lg border border-blue-100 w-full text-sm">解析目标人员，推送【移交确认单】。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 w-full lg:w-[360px] bg-gray-50 mock-bg flex justify-center items-center shrink-0">
+                        <div class="bg-white p-3 rounded-xl border border-blue-200 shadow-md w-full max-w-[300px]">
+                            <div class="flex items-center gap-2 mb-2 border-b border-blue-100 pb-2">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center"><svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-shopping-cart"/></svg></div>
+                                <h4 class="font-bold text-gray-800 text-[12px]">物品移交确认</h4>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded-lg border border-gray-200 mb-2">
+                                <div class="bg-white p-1.5 border border-gray-100 rounded text-[10px] font-bold text-gray-800 mb-2 flex justify-between items-center">
+                                    <span>[1] 华为 Mate 60</span><span class="text-[8px] text-gray-400 font-mono font-normal">SN0000002</span>
+                                </div>
+                                <div class="bg-blue-50/50 border border-blue-100 p-2 rounded-lg space-y-1.5">
+                                    <div><div class="text-[9px] text-gray-500">接收人 (移交至)</div><div class="bg-white border rounded px-1.5 py-1 text-[10px]">维修组-小李</div></div>
+                                </div>
+                            </div>
+                            <button class="w-full bg-blue-500 text-white rounded-lg py-1.5 text-[11px] font-bold">确认移交</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 1.3 物品查询 -->
+                <div id="biz-1-3" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-blue-500"></span><h3 class="font-bold text-lg text-gray-900">1.3 物品查询</h3></div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">涉及卡片</h4>
+                            <span class="inline-block bg-blue-50 text-blue-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-blue-200">物品查询表 (phones_query_display)</span>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">交互工作流</h4>
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #93c5fd;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"帮我查一下所有的华为手机。" 或 "看一下老张退回来的设备。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-blue-50/50 p-3 rounded-lg border border-blue-100 w-full text-sm">解析查询维度，检索库存，推送呈现列表的【物品查询表】卡片。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                                <div class="bg-teal-50/30 p-3 rounded-lg border border-teal-100 w-full text-sm">浏览卡片数据列表。点击任意一行可展开该设备的详情（涵盖详细参数、生命周期及流转日志）。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 w-full lg:w-[360px] bg-gray-50 mock-bg flex justify-center items-center shrink-0">
+                        <div class="bg-white p-3 rounded-xl border-t-4 border-t-blue-400 shadow-md w-full max-w-[300px]">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-gray-800 text-[13px] flex items-center gap-1.5"><svg viewBox="0 0 24 24" width="12" height="12" class="text-blue-500"><use href="#icon-search"/></svg> 物品查询表</h4>
+                                <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">2 台记录</span>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mb-3 bg-gray-50 p-1.5 rounded border border-gray-100">查询维度：所有设备</div>
+                            
+                            <div class="space-y-2 pr-1 chips-scroll max-h-[200px] overflow-y-auto">
+                                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg shadow-sm">
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <div class="text-xs font-bold text-gray-700 flex items-center gap-1.5 flex-wrap">
+                                            [1] 华为 Mate 60
+                                            <span class="text-[9px] px-1.5 py-0.5 rounded leading-none border inline-block bg-teal-100 text-teal-700 border-teal-200">在库</span>
+                                        </div>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded leading-none shrink-0 bg-emerald-100 text-emerald-600 border border-emerald-200">已入库</span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 flex justify-between items-center mt-1.5">
+                                        <span class="flex items-center gap-1"><svg viewBox="0 0 24 24" width="10" height="10"><use href="#icon-user"/></svg> 来源: 采购单: PO...</span>
+                                        <span class="text-[10px] text-gray-400 font-mono bg-white px-1 border border-gray-100 rounded">SN: SN002-1</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg shadow-sm">
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <div class="text-xs font-bold text-gray-700 flex items-center gap-1.5 flex-wrap">
+                                            [2] 小米 14
+                                            <span class="text-[9px] px-1.5 py-0.5 rounded leading-none border inline-block bg-rose-100 text-rose-700 border-rose-200">待质检</span>
+                                        </div>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded leading-none shrink-0 bg-orange-100 text-orange-600 border border-orange-200">待签收</span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 flex justify-between items-center mt-1.5">
+                                        <span class="flex items-center gap-1"><svg viewBox="0 0 24 24" width="10" height="10"><use href="#icon-user"/></svg> 来源: 销售组-张三</span>
+                                        <span class="text-[10px] text-gray-400 font-mono bg-white px-1 border border-gray-100 rounded">SN: SN0000003</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-gray-100 text-[10px] text-center text-gray-500 font-medium bg-blue-50/50 rounded p-1.5">
+                                💡 如需将待收物品入库，请直接对我说“<span class="text-blue-600 font-bold">签收入库</span>”
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.4 手机盘点 -->
+                <div id="biz-1-4" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-gray-400"></span><h3 class="font-bold text-lg text-gray-900">1.4 手机盘点 <span class="text-xs text-red-500 font-normal ml-2">(暂无专属独立卡片)</span></h3></div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mt-4 text-sm text-gray-600 flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-white shadow flex items-center justify-center shrink-0 text-xl">💡</div>
+                        <div>
+                            <strong>兜底路由机制 (OPEN_BUSINESS_MODULE)：</strong><br>
+                            由于盘点功能较重，尚未开发极简对话卡片。当我问“手机盘点”时，AI 会推送一个通用的 <strong>[业务处理引导卡片]</strong>，用户点击该卡片即可跳转至传统的盘点大屏系统。
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <section id="biz-2" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">02</span> 初始化</h2>
+                
+                <!-- 2.1 仓库管理 -->
+                <div id="biz-2-1" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">2.1 仓库管理 (查/增/改/删)</h3></div>
+                        <div class="relative pl-2 pb-4 mt-6">
+                            <div class="flow-line" style="background-color: #5eead4;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"查询仓库" 或 "增加一个仓库"。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-teal-50/50 p-3 rounded-lg border border-teal-100 w-full text-sm">拉起【仓库列表】卡片 或 【新增仓库】表单卡片。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 w-full lg:w-[360px] bg-gray-50 mock-bg flex flex-col gap-4 items-center shrink-0">
+                        <div class="bg-white p-3 rounded-xl border-t-4 border-t-teal-500 shadow-md w-full max-w-[280px]">
+                            <h4 class="font-bold text-gray-800 text-[12px] mb-2 flex items-center gap-1"><svg viewBox="0 0 24 24" width="12" height="12" class="text-teal-500"><use href="#icon-building"/></svg> 现有仓库列表</h4>
+                            <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg relative">
+                                <div class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400"><svg viewBox="0 0 24 24" width="10" height="10"><use href="#icon-edit"/></svg></div>
+                                <div class="font-bold text-gray-800 text-[11px] mb-0.5">总仓(A区)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 2.2 标签管理 -->
+                <div id="biz-2-2" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">2.2 标签管理</h3></div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">涉及卡片群</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200">标签模版管理 (label_list)</span>
+                                <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs border border-purple-200">编辑器确认卡片 (edit_label_prompt)</span>
+                            </div>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6">交互工作流</h4>
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #c084fc;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"管理标签" / "查看标签"。</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-purple-50/50 p-3 rounded-lg border border-purple-100 w-full text-sm">展示【物品签】和【质检签】分类列表。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                                <div class="bg-purple-50/30 p-3 rounded-lg border border-purple-100 w-full text-sm">直接在卡片上点⭐️设为默认。点击【编辑】则弹出提示，进而跳转至全尺寸的高级所见即所得编辑器。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 w-full lg:w-[360px] bg-gray-50 mock-bg flex flex-col gap-4 items-center shrink-0">
+                        <div class="bg-white p-3 rounded-xl border-t-4 border-t-purple-500 shadow-md w-full max-w-[280px]">
+                            <div class="flex items-center justify-between mb-2 px-1">
+                                <h4 class="font-bold text-gray-800 text-[12px] flex items-center gap-1.5"><svg viewBox="0 0 24 24" width="12" height="12" class="text-purple-500"><use href="#icon-tag"/></svg> 标签模版管理</h4>
+                            </div>
+                            <div class="text-[11px] font-bold mb-1.5 flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                                <svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-box"/></svg> 物品标签模版
+                            </div>
+                            <div class="bg-white border border-gray-100 p-2 rounded-lg flex items-center justify-between shadow-sm mb-2">
+                                <div class="flex-1 pr-1">
+                                    <div class="flex items-center gap-1 mb-0.5">
+                                        <span class="text-[11px] font-bold text-gray-700 truncate">标准物品入库签</span>
+                                        <span class="text-[8px] bg-purple-100 text-purple-600 px-1 py-0.5 rounded leading-none">默认</span>
+                                    </div>
+                                    <div class="text-[9px] text-gray-400 truncate">包含: SN码、机型...</div>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <button class="w-6 h-6 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center"><svg viewBox="0 0 24 24" width="10" height="10"><use href="#icon-edit"/></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.3 供应商管理 -->
+                <div id="biz-2-3" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">2.3 供应商管理</h3></div>
+                    <div class="text-xs text-gray-500 mb-3"><span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">涉及查/增/改/删 卡片群</span></div>
+                    <div class="relative pl-2 pb-2">
+                        <div class="flow-line" style="background-color: #818cf8; top:10px; bottom:10px;"></div>
+                        <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">1</div><div class="text-xs text-gray-600">问"查询供应商" 或 "新增供应商"</div></div>
+                        <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">🤖</div><div class="text-xs text-gray-600">推送供应商列表，点击修改则推送编辑表单。</div></div>
+                    </div>
+                </div>
+
+                <!-- 2.4 销售客户管理 -->
+                <div id="biz-2-4" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">2.4 销售客户管理</h3></div>
+                    <div class="text-xs text-gray-500 mb-3"><span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200">无独立卡片</span></div>
+                    <p class="text-xs text-gray-600">CRM 功能较重，用户若要求增删改客户信息，将由 <code>OPEN_BUSINESS_MODULE</code> 引导跳转至客户管理大屏。</p>
+                </div>
+
+                <!-- 2.5 送修客户管理 -->
+                <div id="biz-2-5" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">2.5 送修客户管理</h3></div>
+                    <div class="text-xs text-gray-500 mb-3"><span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200">无独立卡片</span></div>
+                    <p class="text-xs text-gray-600">用于管理外部送修人员信息，同理交由 <code>OPEN_BUSINESS_MODULE</code> 进行统一业务流转与页面跳转引导。</p>
+                </div>
+            </section>
+
+            <section id="biz-3" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">03</span> 采购业务</h2>
+                <div id="biz-3-1" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">3.1 新增采购单</h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>"新建采购单，供应商华强北。" AI 自动填入供应商，拉起包含【明细区】与【状态区】的超级表单。</p>
+                </div>
+                
+                <!-- 3.2 查询采购单 -->
+                <div id="biz-3-2" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">3.2 查询采购单</h3></div>
+                    <div class="text-xs text-gray-500 mb-3"><span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">采购单列表 (po_list)</span></div>
+                    <div class="relative pl-2 pb-2">
+                        <div class="flow-line" style="background-color: #818cf8; top:10px; bottom:10px;"></div>
+                        <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">1</div><div class="text-xs text-gray-600">问"查询采购单"</div></div>
+                        <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">🤖</div><div class="text-xs text-gray-600">外层呈现总金额与状态。点击拉起抽屉展示细项。</div></div>
+                    </div>
+                </div>
+
+                <!-- 3.3 签收入库 -->
+                <div id="biz-3-3" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">3.3 签收入库</h3></div>
+                        
+                        <div class="mb-4">
+                            <span class="inline-block bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-orange-200">入库签收单 (universal_receive_form)</span>
+                        </div>
+
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"把第一个采购单签收了。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-orange-50/50 p-3 rounded-lg border border-orange-100 w-full text-sm">提取维度，推送带有采购待收明细的【入库签收单】。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-800 text-white border-2 border-white shadow-sm flex items-center justify-center text-xs shrink-0"><svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-check-circle"/></svg></div>
+                                <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 w-full text-sm">勾选设备并分配仓库，确认后采购单明细状态扭转为"已签收"，设备变为在库。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.4 打印标签 -->
+                <div id="biz-3-4" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-purple-500"></span><h3 class="font-bold text-lg text-gray-900">3.4 打印标签</h3></div>
+                        
+                        <div class="mb-4">
+                            <span class="inline-block bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-purple-200">打印标签确认单 (print_label_form)</span>
+                        </div>
+
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #d8b4fe;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"第一个采购单帮我打印一下标签。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-purple-50/50 p-3 rounded-lg border border-purple-100 w-full text-sm">提取打印维度，拉起【打印标签确认单】，自动带入默认的标签模版。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-800 text-white border-2 border-white shadow-sm flex items-center justify-center text-xs shrink-0"><svg viewBox="0 0 24 24" width="12" height="12"><use href="#icon-check-circle"/></svg></div>
+                                <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 w-full text-sm">勾选需打印的设备，添加或移除特定模版，点击【确认并打印】，向打印机发指令。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.5 新建采购售后单 -->
+                <div id="biz-3-5" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-amber-500"></span><h3 class="font-bold text-lg text-gray-900">3.5 新建采购售后单</h3></div>
+                    <p class="text-sm text-gray-600 mt-2"><strong>工作流：</strong>对于已发现问题退回给供应商的设备，AI 接收指令后将提供 <strong>采购售后建单卡片</strong>。填入发回原因与物流方式后生成售后凭证。</p>
+                </div>
+
+                <!-- 3.6 处理采购售后 -->
+                <div id="biz-3-6" class="mb-8 bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm opacity-80 flex items-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-gray-400 shrink-0"></span> 
+                    <span class="text-lg font-bold text-gray-700">3.6 处理采购售后 <span class="text-red-500 font-normal text-sm ml-2">(暂无独立卡片)</span></span>
+                    <span class="text-sm text-gray-500 ml-auto">对于复杂的售后跟进节点流转，统一由 <code>OPEN_BUSINESS_MODULE</code> 引导跳转至独立大屏售后页。</span>
+                </div>
+            </section>
+
+            <section id="biz-4" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">04</span> 库管业务</h2>
+                
+                <!-- 4.1 仓库调拨 -->
+                <div id="biz-4-1" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">4.1 仓库调拨</h3></div>
+                        
+                        <div class="mb-4">
+                            <span class="inline-block bg-teal-100 text-teal-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-teal-200">新建仓库调拨单 (warehouse_transfer_card)</span>
+                        </div>
+
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #5eead4;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"把这批货调拨到展示专仓。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-teal-50/50 p-3 rounded-lg border border-teal-100 w-full text-sm">拉出调拨单，预选调入仓库。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                                <div class="bg-teal-50/30 p-3 rounded-lg border border-teal-100 w-full text-sm">点击卡片【+ 从库存添加】，全屏弹出库存数据抽屉供勾选。提交后更改物品所处仓库。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4.2 销售出库（修改销售单） -->
+                <div id="biz-4-2" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-red-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-red-500"></span><h3 class="font-bold text-lg text-gray-900">4.2 销售出库 <span class="text-gray-500 font-normal text-sm ml-2">(修改销售单)</span></h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>在原有的销售订单下追加或变更出库设备，扣减在库库存。拉起 <code>add_sales_order</code> 红色表单完成出库操作。</p>
+                </div>
+
+                <!-- 4.3 送修出库 -->
+                <div id="biz-4-3" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-blue-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-blue-500"></span><h3 class="font-bold text-lg text-gray-900">4.3 送修出库</h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>将设备交付外部维修单位时的物理出库动作，关联送修客户管理模块完成出库凭证。</p>
+                </div>
+
+                <!-- 4.4 采购售后出库（修改采购售后单） -->
+                <div id="biz-4-4" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-amber-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-amber-500"></span><h3 class="font-bold text-lg text-gray-900">4.4 采购售后出库 <span class="text-gray-500 font-normal text-sm ml-2">(修改采购售后单)</span></h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>对于退回给上游供应商的机器，在原有采购售后单上执行实质的机器离库操作记录。</p>
+                </div>
+
+                <!-- 4.5 销售售后出库（修改销售售后单） -->
+                <div id="biz-4-5" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-pink-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-pink-500"></span><h3 class="font-bold text-lg text-gray-900">4.5 销售售后出库 <span class="text-gray-500 font-normal text-sm ml-2">(修改销售售后单)</span></h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>为处理客诉、退换货等原因，而重新寄出设备的离库操作记录流程。</p>
+                </div>
+
+                <!-- 4.6 仅出库 -->
+                <div id="biz-4-6" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-emerald-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><h3 class="font-bold text-lg text-gray-900">4.6 仅出库</h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>问“仅出库”，拉起翠绿色卡片 (outbound_order)。填去向方。提交后，设备永久定格为“仅出库”，无需关联单据直接扣减库存。</p>
+                </div>
+
+                <!-- 4.7 一键叫件 -->
+                <div id="biz-4-7" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-l-4 border-l-gray-800">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-gray-800"></span><h3 class="font-bold text-lg text-gray-900">4.7 一键叫件</h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>完成上述任何出库操作后，直接呼叫关联快递（顺丰/京东等）上门取件的功能模块。</p>
+                </div>
+            </section>
+
+            <!-- 5. 质检业务 -->
+            <section id="biz-5" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">05</span> 质检业务</h2>
+                <div class="bg-gray-50 border border-gray-200 border-dashed rounded-2xl flex flex-col items-center justify-center p-12 text-center h-48">
+                    <div class="text-5xl mb-3 grayscale opacity-40">🔬</div>
+                    <h4 class="font-bold text-gray-500 mb-1 text-lg">质检业务板块暂空</h4>
+                    <p class="text-sm text-gray-400">目前版本质检相关业务内容和交互流尚未填充</p>
+                </div>
+            </section>
+
+            <!-- 6. 维修业务 -->
+            <section id="biz-6" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">06</span> 维修业务</h2>
+                
+                <!-- 6.1 创建维修单 -->
+                <div id="biz-6-1" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-blue-500"></span><h3 class="font-bold text-lg text-gray-900">6.1 创建维修单</h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>对于判定需要维修的设备，AI 推送“维修工单”创建卡片，需填报设备当前症状以及预计耗材，生成初始维修单据。</p>
+                </div>
+
+                <!-- 6.2 修改维修单 -->
+                <div id="biz-6-2" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><h3 class="font-bold text-lg text-gray-900">6.2 修改维修单 <span class="text-gray-500 font-normal text-sm ml-2">(填写维修情况)</span></h3></div>
+                    <p class="text-sm text-gray-600"><strong>工作流：</strong>维修人员在修复设备后，调出原有的维修单，填报实际更换的零部件、维修费用明细及最终的测试结果，以完成该维修工单的业务闭环。</p>
+                </div>
+            </section>
+
+            <!-- 7. 智能货架 -->
+            <section id="biz-7" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-cyan-200 pb-2 flex items-center gap-2"><span class="text-cyan-500">07</span> 智能货架</h2>
+                
+                <!-- 7.1 控制智能货架亮灯 -->
+                <div id="biz-7-1" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-t-4 border-t-cyan-500 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-cyan-50 rounded-full flex items-center justify-center opacity-50"><div class="w-12 h-12 bg-cyan-100 rounded-full"></div></div>
+                    <div class="flex items-center gap-2 mb-4 relative z-10"><span class="w-2 h-2 rounded-full bg-cyan-500"></span><h3 class="font-bold text-lg text-gray-900">7.1 控制智能货架亮灯查询手机位置</h3></div>
+                    <p class="text-sm text-gray-600 mb-4 relative z-10"><strong>工作流：</strong>"帮我找一下那台iPhone在哪。" AI 解析意图后调用硬件接口，驱动物理仓库中对应的智能货架格口亮起指示灯，辅助快速定位找货。</p>
+                    <span class="inline-block bg-cyan-50 text-cyan-700 font-medium px-2.5 py-1 rounded text-xs border border-cyan-200 relative z-10">软硬结合指令 (IoT_trigger)</span>
+                </div>
+
+                <!-- 7.2 智能货架看板 -->
+                <div id="biz-7-2" class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm border-t-4 border-t-cyan-500">
+                    <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-cyan-500"></span><h3 class="font-bold text-lg text-gray-900">7.2 智能货架看板</h3></div>
+                    <p class="text-sm text-gray-600 mb-4"><strong>工作流：</strong>"打开货架看板。" AI 呈现当前智能货架的仓位占用图表，高亮闲置、故障及满载的货架区域阵列图，全局掌握硬件利用率。</p>
+                    <span class="inline-block bg-cyan-50 text-cyan-700 font-medium px-2.5 py-1 rounded text-xs border border-cyan-200">数据展示卡片 (shelf_dashboard)</span>
+                </div>
+            </section>
+
+            <!-- 8. 销售业务 -->
+            <section id="biz-8" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-red-200 pb-2 flex items-center gap-2"><span class="text-red-500">08</span> 销售业务</h2>
+                
+                <!-- 8.1 新建销售单 -->
+                <div id="biz-8-1" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-red-500"></span><h3 class="font-bold text-lg text-gray-900">8.1 新建销售单</h3></div>
+                        
+                        <div class="mb-4">
+                            <span class="inline-block bg-red-100 text-red-700 font-bold px-3 py-1 rounded text-sm shadow-sm border border-red-200">新增销售单 (add_sales_order)</span>
+                        </div>
+
+                        <div class="relative pl-2 pb-4">
+                            <div class="flow-line" style="background-color: #fca5a5;"></div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full text-sm">"把这几台手机卖给张老板。"</div>
+                            </div>
+                            <div class="flow-step flex gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 border-2 border-white shadow-sm flex items-center justify-center text-sm shrink-0">🤖</div>
+                                <div class="bg-red-50/50 p-3 rounded-lg border border-red-100 w-full text-sm">提取客户名，拉起红色系的销售单卡片，并自动挂载选定的待出库设备。</div>
+                            </div>
+                            <div class="flow-step flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                                <div class="bg-red-50/30 p-3 rounded-lg border border-red-100 w-full text-sm">用户必须针对每一台独立设备，手动敲定“销售价(¥)”，才能确认生成财务单据。这批设备彻底变更为“已售出”。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8.2 修改销售单 -->
+                <div id="biz-8-2" class="mb-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
+                    <div class="p-6 flex-1 border-b lg:border-b-0 lg:border-r border-gray-100">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-rose-400"></span><h3 class="font-bold text-lg text-gray-900">8.2 修改销售单 <span class="text-gray-500 font-normal text-sm ml-2">(重复)</span></h3></div>
+                        
+                        <div class="mb-4">
+                            <span class="inline-block bg-rose-50 text-rose-700 font-medium px-3 py-1 rounded text-sm shadow-sm border border-rose-200">复用: (add_sales_order) 卡片</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4"><strong>工作流：</strong>对尚未结束或信息填写有误的订单进行资料更新及机器增减。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="biz-9" class="mb-16">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-orange-200 pb-2 flex items-center gap-2"><span class="text-orange-500">09</span> 其他</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- 9.1 移交记录 -->
+                    <div id="biz-9-1" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-blue-500"></span><h3 class="font-bold text-lg text-gray-900">9.1 移交记录</h3></div>
+                        <div class="mt-2 text-xs text-gray-500 mb-4"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">移交记录列表 (transfer_records)</span></div>
+                        <div class="relative pl-2 pb-2">
+                            <div class="flow-line" style="background-color: #93c5fd; top:10px; bottom:10px;"></div>
+                            <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">1</div><div class="text-sm text-gray-600">问"查看我的移交记录"</div></div>
+                            <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">🤖</div><div class="text-sm text-gray-600">推送列表，展示历史移交的物品、接收人及状态流转信息。</div></div>
+                        </div>
+                    </div>
+
+                    <!-- 9.2 签收记录 -->
+                    <div id="biz-9-2" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-orange-500"></span><h3 class="font-bold text-lg text-gray-900">9.2 签收记录</h3></div>
+                        <div class="mt-2 text-xs text-gray-500 mb-4"><span class="bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200">签收记录列表 (receive_records)</span></div>
+                        <div class="relative pl-2 pb-2">
+                            <div class="flow-line" style="background-color: #fdba74; top:10px; bottom:10px;"></div>
+                            <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">1</div><div class="text-sm text-gray-600">问"查看签收记录"</div></div>
+                            <div class="flow-step flex gap-2 mb-2 items-center"><div class="w-5 h-5 bg-orange-100 text-orange-600 rounded-full flex justify-center items-center text-[10px] shrink-0 border-2 border-white">🤖</div><div class="text-sm text-gray-600">推送列表，展示历史签收的入库单据、具体时间及设备明细。</div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="nonbiz-1" class="mb-16 mt-16">
+                <div class="mb-10 bg-gradient-to-r from-indigo-50 to-indigo-100/50 rounded-2xl p-6 border border-indigo-100 text-center shadow-sm">
+                    <h2 class="text-2xl font-black text-indigo-600 tracking-widest">二、非业务类</h2>
+                </div>
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-indigo-200 pb-2 flex items-center gap-2"><span class="text-indigo-500">01</span> 初始化设置引导</h2>
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <p class="text-sm text-gray-600">用户首次登录系统或主动询问时触发。AI 推送包含多步骤的【引导向导卡片】，帮助快速建立基础设施。</p>
+                </div>
+            </section>
+
+            <footer class="text-center text-gray-400 text-sm border-t border-gray-200 pt-8 pb-8">
+                AI ERP 智能管家 - 产品交互工作流说明书 &copy; 2026
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // ================= 业务全景角色流程图逻辑 =================
+            const container = document.getElementById('flow-container');
+            const svg = document.getElementById('lines-svg');
+            const labelsContainer = document.getElementById('labels-container');
+            
+            const fsWrapper = document.getElementById('flowchart-fullscreen-wrapper');
+            const fsBtn = document.getElementById('toggle-fullscreen-btn');
+            const fsIconUse = document.querySelector('#fs-icon use');
+            const fsText = document.getElementById('fs-text');
+            
+            let isFullscreen = false;
+
+            if(container && svg && labelsContainer) {
+                // 核心绘图函数
+                function drawConnections() {
+                    // 清空已有的线和标签（保留defs）
+                    const defs = svg.querySelector('defs').outerHTML;
+                    svg.innerHTML = defs;
+                    labelsContainer.innerHTML = '';
+
+                    const getRect = (id) => {
+                        const elNode = document.getElementById(id);
+                        if(!elNode) return null;
+                        const el = elNode.querySelector('.role-card');
+                        if(!el) return null;
+
+                        const elRect = el.getBoundingClientRect();
+                        const contRect = container.getBoundingClientRect();
+                        return {
+                            top: elRect.top - contRect.top - 25, 
+                            bottom: elRect.bottom - contRect.top,
+                            left: elRect.left - contRect.left,
+                            right: elRect.right - contRect.left,
+                            centerX: elRect.left - contRect.left + elRect.width / 2,
+                            centerY: elRect.top - contRect.top + elRect.height / 2,
+                            width: elRect.width,
+                            height: elRect.height
+                        };
+                    };
+
+                    function drawLine({ from, to, fromSide = 'right', toSide = 'left', label, color = '#94a3b8', arrowId = 'arrow-slate', animate = true, offset = 0 }) {
+                        const r1 = getRect(from);
+                        const r2 = getRect(to);
+                        if (!r1 || !r2) return;
+                        
+                        const getCoords = (rect, side, isStart) => {
+                            let x, y, dx = 0, dy = 0;
+                            const CURVE = 60;
+                            switch(side) {
+                                case 'top': x = rect.centerX + offset; y = rect.top; dy = -CURVE; break;
+                                case 'bottom': x = rect.centerX + offset; y = rect.bottom; dy = CURVE; break;
+                                case 'left': x = rect.left; y = rect.centerY + offset; dx = -CURVE; break;
+                                case 'right': x = rect.right; y = rect.centerY + offset; dx = CURVE; break;
+                            }
+                            return { x, y, cx: x + dx, cy: y + dy };
+                        };
+
+                        const start = getCoords(r1, fromSide, true);
+                        const end = getCoords(r2, toSide, false);
+
+                        const pathD = `M ${start.x} ${start.y} C ${start.cx} ${start.cy}, ${end.cx} ${end.cy}, ${end.x} ${end.y}`;
+                        const midX = 0.125 * start.x + 0.375 * start.cx + 0.375 * end.cx + 0.125 * end.x;
+                        const midY = 0.125 * start.y + 0.375 * start.cy + 0.375 * end.cy + 0.125 * end.y;
+
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', pathD);
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke', color);
+                        path.setAttribute('stroke-width', '2');
+                        path.setAttribute('marker-end', `url(#${arrowId})`);
+                        if (animate) path.classList.add('path-animated');
+                        svg.appendChild(path);
+
+                        if (label) {
+                            const labelEl = document.createElement('div');
+                            labelEl.className = 'line-label';
+                            labelEl.textContent = label;
+                            labelEl.style.left = `${midX}px`;
+                            labelEl.style.top = `${midY}px`;
+                            if(color !== '#94a3b8') {
+                                labelEl.style.color = color;
+                                labelEl.style.borderColor = color;
+                            }
+                            labelsContainer.appendChild(labelEl);
+                        }
+                    }
+
+                    // 横向主干连线
+                    drawLine({ from: 'node-init', to: 'node-purchase', color: '#94a3b8', arrowId: 'arrow-slate' });
+                    drawLine({ from: 'node-purchase', to: 'node-receiver', label: '移交', color: '#3b82f6', arrowId: 'arrow-blue' });
+                    drawLine({ from: 'node-receiver', to: 'node-dispatcher', label: '移交', color: '#3b82f6', arrowId: 'arrow-blue' });
+                    drawLine({ from: 'node-dispatcher', to: 'node-qc', label: '移交', color: '#3b82f6', arrowId: 'arrow-blue' });
+                    drawLine({ from: 'node-qc', to: 'node-photo', label: '移交', color: '#3b82f6', arrowId: 'arrow-blue' });
+                    drawLine({ from: 'node-photo', to: 'node-shelver', label: '移交', color: '#3b82f6', arrowId: 'arrow-blue' });
+                    drawLine({ from: 'node-shelver', to: 'node-sales-dispatcher', color: '#94a3b8', arrowId: 'arrow-slate' });
+                    drawLine({ from: 'node-sales-dispatcher', to: 'node-sales', color: '#94a3b8', arrowId: 'arrow-slate' });
+                    drawLine({ from: 'node-sales', to: 'node-packer', color: '#94a3b8', arrowId: 'arrow-slate' });
+
+                    // 维修分支及回路
+                    drawLine({ from: 'node-dispatcher', to: 'node-int-repair', fromSide: 'bottom', toSide: 'top', offset: -25, label: '移交', color: '#ef4444', arrowId: 'arrow-red' });
+                    drawLine({ from: 'node-int-repair', to: 'node-dispatcher', fromSide: 'top', toSide: 'bottom', offset: 25, label: '修毕指回', color: '#10b981', arrowId: 'arrow-slate' });
+                }
+
+                function toggleFullScreen() {
+                    isFullscreen = !isFullscreen;
+                    
+                    if (isFullscreen) {
+                        fsWrapper.classList.add('is-fullscreen');
+                        fsIconUse.setAttribute('href', '#icon-compress');
+                        fsText.textContent = '退出全屏';
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        fsWrapper.classList.remove('is-fullscreen');
+                        fsIconUse.setAttribute('href', '#icon-expand');
+                        fsText.textContent = '全屏预览';
+                        document.body.style.overflow = '';
+                    }
+                    setTimeout(drawConnections, 50);
+                }
+
+                if(fsBtn) {
+                    fsBtn.addEventListener('click', toggleFullScreen);
+                }
+
+                setTimeout(drawConnections, 300);
+                window.addEventListener('resize', () => {
+                    requestAnimationFrame(drawConnections);
+                });
+            }
+
+            // ================= 验机中心业务流程图逻辑 =================
+            const insFsWrapper = document.getElementById('inspection-fullscreen-wrapper');
+            const insFsBtn = document.getElementById('toggle-inspection-fs-btn');
+            const insFsIconUse = document.querySelector('#ins-fs-icon use');
+            const insFsText = document.getElementById('ins-fs-text');
+            
+            let isInsFullscreen = false;
+
+            function toggleInsFullScreen() {
+                isInsFullscreen = !isInsFullscreen;
+                
+                if (isInsFullscreen) {
+                    insFsWrapper.classList.add('is-fullscreen');
+                    insFsIconUse.setAttribute('href', '#icon-compress');
+                    insFsText.textContent = '退出全屏';
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    insFsWrapper.classList.remove('is-fullscreen');
+                    insFsIconUse.setAttribute('href', '#icon-expand');
+                    insFsText.textContent = '全屏预览';
+                    document.body.style.overflow = '';
+                }
+            }
+
+            if(insFsBtn) {
+                insFsBtn.addEventListener('click', toggleInsFullScreen);
+            }
+
+            // ================= 统一支持 ESC 退出全屏 =================
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (isFullscreen) {
+                        toggleFullScreen();
+                    }
+                    if (isInsFullscreen) {
+                        toggleInsFullScreen();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
