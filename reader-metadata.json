@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782797110638,
+  "updatedAt": 1782797114223,
   "categories": [
     {
       "id": "uncategorized",
@@ -11,11 +11,6 @@
       "id": "tech",
       "name": "技术文档",
       "color": "#007aff"
-    },
-    {
-      "id": "novel",
-      "name": "小说",
-      "color": "#af52de"
     },
     {
       "id": "article",
