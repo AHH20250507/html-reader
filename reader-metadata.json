@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782790429988,
+  "updatedAt": 1782790447039,
   "categories": [
     {
       "id": "uncategorized",
@@ -29,12 +29,12 @@
       "title": "让思考上瘾",
       "description": "",
       "filename": "id_1782789669485_rqkfn38ob.html",
-      "categoryId": "uncategorized",
+      "categoryId": "article",
       "progress": 26.217228464419474,
       "scrollPosition": 12600,
-      "pinned": false,
+      "pinned": true,
       "createdAt": 1782789669485,
-      "updatedAt": 1782790405202,
+      "updatedAt": 1782790443558,
       "lastReadAt": 1782790408908
     },
     {
