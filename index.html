@@ -1883,7 +1883,15 @@
             renderBooks();
             showToast(`成功导入 ${importedCount} 本书籍`);
 
-            syncToGitHub().catch(err => console.error('Sync after import failed:', err));
+            const synced = await syncToGitHub().catch(err => {
+                console.error('Sync after import failed:', err);
+                return false;
+            });
+            if (!synced && !state.settings.githubToken) {
+                showToast('未配置 Token，书籍仅保存在本地', 'error');
+            } else if (!synced) {
+                showToast('同步到 GitHub 失败，请检查 Token 和网络', 'error');
+            }
         });
 
         function readFileAsText(file) {
@@ -1955,7 +1963,7 @@
             
             readerInner.innerHTML = '';
             const iframe = document.createElement('iframe');
-            iframe.sandbox = 'allow-same-origin';
+            iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation';
             iframe.style.cssText = 'width:100%;height:100vh;border:none;display:block;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99;background:white;';
             readerInner.appendChild(iframe);
 
@@ -2209,16 +2217,6 @@
                     loadedCount++;
                 }
 
-                // Only remove local books if GitHub actually returned some books,
-                // otherwise keep local books to avoid wiping user data on sync failures
-                if (htmlFiles.length > 0) {
-                    const localOnlyBooks = state.books.filter(b => !remoteIds.has(b.id));
-                    for (const book of localOnlyBooks) {
-                        await dbDelete('books', book.id);
-                    }
-                    state.books = state.books.filter(b => remoteIds.has(b.id));
-                }
-
                 renderCategories();
                 renderBooks();
                 if (loadedCount > 0) showToast(`已从 GitHub 加载 ${loadedCount} 本书籍`);
@@ -2230,8 +2228,7 @@
 
         async function syncToGitHub() {
             if (!state.settings.githubToken) {
-                showToast('未配置 GitHub Token，书籍只保存在本地浏览器', 'error');
-                return;
+                return false;
             }
 
             try {
@@ -2357,10 +2354,11 @@
                 if (!metaUploadRes.ok) throw new Error('元数据同步失败');
 
                 showToast('已同步到 GitHub');
+                return true;
             } catch (err) {
                 console.error('Sync to GitHub error:', err);
                 showToast('同步失败: ' + err.message, 'error');
-                throw err;
+                return false;
             }
         }
 
