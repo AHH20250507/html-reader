@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782790498389,
+  "updatedAt": 1782790563224,
   "categories": [
     {
       "id": "uncategorized",
@@ -48,7 +48,7 @@
       "pinned": false,
       "createdAt": 1782790425056,
       "updatedAt": 1782790461560,
-      "lastReadAt": 1782790479641
+      "lastReadAt": 1782790550551
     }
   ]
 }
