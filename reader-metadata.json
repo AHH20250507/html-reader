@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782790461862,
+  "updatedAt": 1782790498389,
   "categories": [
     {
       "id": "uncategorized",
@@ -30,12 +30,12 @@
       "description": "",
       "filename": "id_1782789669485_rqkfn38ob.html",
       "categoryId": "article",
-      "progress": 26.217228464419474,
-      "scrollPosition": 12600,
+      "progress": 0,
+      "scrollPosition": 0,
       "pinned": true,
       "createdAt": 1782789669485,
       "updatedAt": 1782790443558,
-      "lastReadAt": 1782790408908
+      "lastReadAt": 1782790487891
     },
     {
       "id": "id_1782790425056_nbpdv2rpf",
@@ -48,7 +48,7 @@
       "pinned": false,
       "createdAt": 1782790425056,
       "updatedAt": 1782790461560,
-      "lastReadAt": null
+      "lastReadAt": 1782790479641
     }
   ]
 }
