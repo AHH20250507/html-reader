@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782789196626,
+  "updatedAt": 1782789212676,
   "categories": [
     {
       "id": "article",
@@ -23,5 +23,19 @@
       "color": "#86868b"
     }
   ],
-  "books": []
+  "books": [
+    {
+      "id": "id_1782789209179_1w64ooguj",
+      "title": "让思考上瘾",
+      "description": "",
+      "filename": "id_1782789209179_1w64ooguj.html",
+      "categoryId": "uncategorized",
+      "progress": 0,
+      "scrollPosition": 0,
+      "pinned": false,
+      "createdAt": 1782789209179,
+      "updatedAt": 1782789209179,
+      "lastReadAt": null
+    }
+  ]
 }
