@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782797108239,
+  "updatedAt": 1782797110638,
   "categories": [
     {
       "id": "uncategorized",
@@ -38,7 +38,7 @@
       "title": "让思考上瘾 手机版",
       "filename": "book_1782797069196_7qmeo4.html",
       "category": "article",
-      "pinned": false,
+      "pinned": true,
       "importDate": 1782797071560,
       "lastRead": 0
     }
