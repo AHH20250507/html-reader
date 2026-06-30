@@ -1317,15 +1317,68 @@
             pendingFiles: []
         };
 
-        // IndexedDB Setup
+        // IndexedDB Setup with localStorage fallback
         const DB_NAME = 'HTMLReaderDB';
         const DB_VERSION = 2;
         let db = null;
+        let useFallback = false;
+        const fallbackData = {
+            books: {},
+            categories: {},
+            settings: {},
+            uiState: {}
+        };
+
+        function getStoreKeyField(store) {
+            return (store === 'settings' || store === 'uiState') ? 'key' : 'id';
+        }
+
+        function getStoreKey(store, value) {
+            const field = getStoreKeyField(store);
+            return value[field];
+        }
+
+        function initFallback() {
+            useFallback = true;
+            try {
+                const saved = localStorage.getItem('htmlReaderFallback');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.keys(fallbackData).forEach(k => {
+                        if (parsed[k]) fallbackData[k] = parsed[k];
+                    });
+                }
+            } catch (e) {
+                console.error('Fallback load error:', e);
+            }
+        }
+
+        function saveFallback() {
+            if (!useFallback) return;
+            try {
+                localStorage.setItem('htmlReaderFallback', JSON.stringify(fallbackData));
+            } catch (e) {
+                console.error('Fallback save error:', e);
+                if (e.name === 'QuotaExceededError') {
+                    showToast('本地存储空间不足，无法保存更多书籍', 'error');
+                }
+            }
+        }
 
         function initDB() {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
+                if (!window.indexedDB) {
+                    console.warn('IndexedDB not available, using localStorage fallback');
+                    initFallback();
+                    resolve(null);
+                    return;
+                }
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = () => reject(request.error);
+                request.onerror = () => {
+                    console.error('IndexedDB error:', request.error);
+                    initFallback();
+                    resolve(null);
+                };
                 request.onsuccess = () => {
                     db = request.result;
                     resolve(db);
@@ -1352,6 +1405,9 @@
 
         // DB Operations
         function dbGet(store, key) {
+            if (useFallback) {
+                return Promise.resolve(fallbackData[store][key]);
+            }
             return new Promise((resolve, reject) => {
                 const tx = db.transaction(store, 'readonly');
                 const objStore = tx.objectStore(store);
@@ -1362,6 +1418,9 @@
         }
 
         function dbGetAll(store) {
+            if (useFallback) {
+                return Promise.resolve(Object.values(fallbackData[store]));
+            }
             return new Promise((resolve, reject) => {
                 const tx = db.transaction(store, 'readonly');
                 const objStore = tx.objectStore(store);
@@ -1372,6 +1431,11 @@
         }
 
         function dbPut(store, value) {
+            if (useFallback) {
+                fallbackData[store][getStoreKey(store, value)] = value;
+                saveFallback();
+                return Promise.resolve();
+            }
             return new Promise((resolve, reject) => {
                 const tx = db.transaction(store, 'readwrite');
                 const objStore = tx.objectStore(store);
@@ -1382,6 +1446,11 @@
         }
 
         function dbDelete(store, key) {
+            if (useFallback) {
+                delete fallbackData[store][key];
+                saveFallback();
+                return Promise.resolve();
+            }
             return new Promise((resolve, reject) => {
                 const tx = db.transaction(store, 'readwrite');
                 const objStore = tx.objectStore(store);
