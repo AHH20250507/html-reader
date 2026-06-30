@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --bg-tertiary: #fafafa;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #86868b;
+            --accent: #007aff;
+            --accent-hover: #0056b3;
+            --border: #d2d2d7;
+            --border-light: #e8e8ed;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --radius-xl: 24px;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        input, textarea, select {
+            font-family: inherit;
+            outline: none;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 12px 24px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 20px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.25);
+        }
+
+        .brand-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 0 12px;
+            margin-bottom: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 2px;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--text-primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-list {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .category-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .category-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .add-category-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 6px;
+            transition: background 0.2s;
+        }
+
+        .add-category-btn:hover {
+            background: rgba(0,122,255,0.08);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            margin-bottom: 10px;
+        }
+
+        .sync-status.connected {
+            color: #34c759;
+            background: rgba(52,199,89,0.08);
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+        }
+
+        .sync-status.connected .sync-dot {
+            background: #34c759;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .top-bar {
+            height: 64px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            z-index: 5;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box {
+            position: relative;
+            width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            background: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0,122,255,0.1);
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: 14px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,122,255,0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,122,255,0.35);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-light);
+        }
+
+        .btn-icon {
+            padding: 10px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .btn-icon:hover {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .view-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            position: relative;
+        }
+
+        .view-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .view-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .view-area::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 24px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-desc {
+            font-size: 14px;
+            max-width: 400px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* Bookshelf */
+        .bookshelf {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .book-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            position: relative;
+        }
+
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .book-cover {
+            height: 140px;
+            background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .book-cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 100%);
+        }
+
+        .book-cover-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+            line-height: 1.4;
+            z-index: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .book-cover-icon {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-size: 28px;
+            opacity: 0.2;
+        }
+
+        .book-info {
+            padding: 16px;
+        }
+
+        .book-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .book-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 10px;
+        }
+
+        .book-category {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007aff, #5856d6);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+        }
+
+        .book-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .book-card:hover .book-actions {
+            opacity: 1;
+        }
+
+        .book-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .book-action-btn:hover {
+            background: white;
+            color: var(--accent);
+        }
+
+        /* Reader */
+        .reader-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 100;
+            flex-direction: column;
+        }
+
+        .reader-container.active {
+            display: flex;
+        }
+
+        .reader-header {
+            height: 56px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .reader-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 50%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .reader-progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--bg-secondary);
+        }
+
+        .reader-progress-bar {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.1s linear;
+        }
+
+        .reader-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 0;
+            background: white;
+        }
+
+        .reader-inner {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .reader-content iframe {
+            width: 100%;
+            min-height: 100%;
+            border: none;
+        }
+
+        /* Import Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius-xl);
+            width: 90%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 24px 24px 0;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .modal-footer {
+            padding: 16px 24px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px 24px;
+            text-align: center;
+            transition: all 0.2s;
+            background: var(--bg-tertiary);
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(0,122,255,0.05);
+        }
+
+        .drop-zone-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: var(--accent);
+        }
+
+        .drop-zone-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .drop-zone-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .file-list {
+            margin-top: 16px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .file-item-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .file-item-size {
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0,122,255,0.1);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        /* Settings */
+        .settings-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            max-width: 680px;
+        }
+
+        .settings-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .settings-card-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(29, 29, 31, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 300;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: rgba(52, 199, 89, 0.9);
+        }
+
+        .toast.error {
+            background: rgba(255, 59, 48, 0.9);
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .spinner.dark {
+            border-color: var(--border);
+            border-top-color: var(--text-primary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .bookshelf {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            .search-box {
+                width: 180px;
+            }
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">H</div>
+                <div>
+                    <div class="brand-text">HTML Reader</div>
+                    <div class="brand-sub">Elegant Reader</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Library</div>
+                <div class="nav-item active" data-view="shelf" data-filter="all">
+                    <span class="nav-icon">📚</span>
+                    <span>全部书籍</span>
+                </div>
+                <div class="nav-item" data-view="shelf" data-filter="recent">
+                    <span class="nav-icon">🕐</span>
+                    <span>最近阅读</span>
+                </div>
+                <div class="nav-item" data-view="shelf" data-filter="unread">
+                    <span class="nav-icon">📖</span>
+                    <span>未读</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Categories</div>
+                <div class="category-list" id="categoryList"></div>
+                <div class="add-category-btn" id="addCategoryBtn">
+                    <span>+</span>
+                    <span>新建分类</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sync-status" id="syncStatus">
+                    <span class="sync-dot"></span>
+                    <span id="syncStatusText">未连接 GitHub</span>
+                </div>
+                <div class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>设置</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 class="page-title" id="pageTitle">全部书籍</h1>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="搜索书名、分类...">
+                    </div>
+                    <button class="btn btn-primary" id="importBtn">
+                        <span>+</span>
+                        <span>导入 HTML</span>
+                    </button>
+                    <button class="btn-icon" id="syncBtn" title="同步到 GitHub">🔄</button>
+                </div>
+            </header>
+
+            <div class="view-area" id="viewArea">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Reader -->
+    <div class="reader-container" id="readerContainer">
+        <div class="reader-header">
+            <button class="btn-icon" id="closeReader">✕</button>
+            <div class="reader-title" id="readerTitle">Book Title</div>
+            <div class="top-actions">
+                <button class="btn-icon" id="readerCategory" title="分类">🏷️</button>
+                <button class="btn-icon" id="readerDelete" title="删除">🗑️</button>
+            </div>
+            <div class="reader-progress-container">
+                <div class="reader-progress-bar" id="readerProgressBar"></div>
+            </div>
+        </div>
+        <div class="reader-content" id="readerContent">
+            <div class="reader-inner" id="readerInner"></div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">导入 HTML</div>
+                <div class="modal-subtitle">支持拖拽或点击上传 .html 文件</div>
+            </div>
+            <div class="modal-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">📄</div>
+                    <div class="drop-zone-title">拖拽 HTML 文件到此处</div>
+                    <div class="drop-zone-desc">或点击选择文件</div>
+                    <button class="btn btn-secondary" id="selectFilesBtn">选择文件</button>
+                    <input type="file" id="fileInput" class="hidden" accept=".html,.htm" multiple>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">默认分类</label>
+                    <select class="form-select" id="importCategory">
+                        <option value="">未分类</option>
+                    </select>
+                </div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelImport">取消</button>
+                <button class="btn btn-primary" id="confirmImport">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <div class="modal-title" id="categoryModalTitle">新建分类</div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">分类名称</label>
+                    <input type="text" class="form-input" id="categoryNameInput" placeholder="例如：技术文档">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelCategory">取消</button>
+                <button class="btn btn-primary" id="confirmCategory">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings View -->
+    <div class="modal-overlay" id="settingsModal" style="align-items: flex-start; padding-top: 60px;">
+        <div class="modal" style="max-width: 640px;">
+            <div class="modal-header">
+                <div class="modal-title">设置</div>
+                <div class="modal-subtitle">配置 GitHub 同步与阅读偏好</div>
+            </div>
+            <div class="modal-body">
+                <div class="settings-card">
+                    <div class="settings-card-title">GitHub 同步</div>
+                    <div class="settings-card-desc">填写信息后，阅读器可以从私密仓库读取 HTML 文档并同步阅读进度。</div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">GitHub 用户名</label>
+                            <input type="text" class="form-input" id="githubUsername" placeholder="yourname">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">文档仓库名称</label>
+                            <input type="text" class="form-input" id="githubRepo" placeholder="html-library">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Personal Access Token</label>
+                        <input type="password" class="form-input" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxx">
+                        <div class="form-hint">Token 仅保存在浏览器本地，用于访问你的私密文档仓库。需要 <code>repo</code> 权限。</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="autoSync"> 自动同步阅读进度到 GitHub
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-card-title">阅读设置</div>
+                    <div class="settings-card-desc">调整阅读器的默认显示方式。</div>
+                    <div class="form-group">
+                        <label class="form-label">默认字体大小</label>
+                        <select class="form-select" id="fontSizeSetting">
+                            <option value="14">14px</option>
+                            <option value="16" selected>16px</option>
+                            <option value="18">18px</option>
+                            <option value="20">20px</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSettings">取消</button>
+                <button class="btn btn-primary" id="saveSettings">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Application State
+        const state = {
+            books: [],
+            categories: [
+                { id: 'uncategorized', name: '未分类', color: '#86868b' },
+                { id: 'tech', name: '技术文档', color: '#007aff' },
+                { id: 'novel', name: '小说', color: '#af52de' },
+                { id: 'article', name: '文章', color: '#34c759' }
+            ],
+            currentFilter: 'all',
+            currentCategory: null,
+            searchQuery: '',
+            settings: {
+                githubUsername: '',
+                githubRepo: '',
+                githubToken: '',
+                autoSync: false,
+                fontSize: 16
+            },
+            pendingFiles: []
+        };
+
+        // IndexedDB Setup
+        const DB_NAME = 'HTMLReaderDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('books')) {
+                        const bookStore = database.createObjectStore('books', { keyPath: 'id' });
+                        bookStore.createIndex('category', 'categoryId', { unique: false });
+                        bookStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+                    }
+                    if (!database.objectStoreNames.contains('settings')) {
+                        database.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    if (!database.objectStoreNames.contains('categories')) {
+                        database.createObjectStore('categories', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        // DB Operations
+        function dbGet(store, key) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(store, 'readonly');
+                const objStore = tx.objectStore(store);
+                const request = objStore.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbGetAll(store) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(store, 'readonly');
+                const objStore = tx.objectStore(store);
+                const request = objStore.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbPut(store, value) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(store, 'readwrite');
+                const objStore = tx.objectStore(store);
+                const request = objStore.put(value);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbDelete(store, key) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(store, 'readwrite');
+                const objStore = tx.objectStore(store);
+                const request = objStore.delete(key);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Utilities
+        function generateId() {
+            return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function formatDate(date) {
+            if (!date) return '从未';
+            const d = new Date(date);
+            return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            setTimeout(() => toast.classList.add('active'), 10);
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
+        // Extract title from HTML
+        function extractTitle(html) {
+            const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+            return titleMatch ? titleMatch[1].trim() : '';
+        }
+
+        function extractDescription(html) {
+            const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i);
+            return metaMatch ? metaMatch[1].trim() : '';
+        }
+
+        // DOM Elements
+        const viewArea = document.getElementById('viewArea');
+        const pageTitle = document.getElementById('pageTitle');
+        const searchInput = document.getElementById('searchInput');
+        const categoryList = document.getElementById('categoryList');
+        const syncStatus = document.getElementById('syncStatus');
+        const syncStatusText = document.getElementById('syncStatusText');
+
+        // Rendering
+        function renderBooks() {
+            let filtered = state.books;
+
+            if (state.currentFilter === 'recent') {
+                filtered = state.books.filter(b => b.lastReadAt).sort((a, b) => b.lastReadAt - a.lastReadAt);
+            } else if (state.currentFilter === 'unread') {
+                filtered = state.books.filter(b => !b.lastReadAt || b.progress === 0);
+            } else if (state.currentCategory) {
+                filtered = state.books.filter(b => b.categoryId === state.currentCategory);
+            }
+
+            if (state.searchQuery.trim()) {
+                const q = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(b => 
+                    (b.title && b.title.toLowerCase().includes(q)) ||
+                    (b.description && b.description.toLowerCase().includes(q)) ||
+                    getCategoryName(b.categoryId).toLowerCase().includes(q)
+                );
+            }
+
+            if (filtered.length === 0) {
+                viewArea.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📚</div>
+                        <div class="empty-title">还没有书籍</div>
+                        <div class="empty-desc">点击右上角“导入 HTML”添加你的第一本电子书，或从 GitHub 同步已有书库。</div>
+                        <button class="btn btn-primary" onclick="document.getElementById('importBtn').click()">立即导入</button>
+                    </div>
+                `;
+                return;
+            }
+
+            viewArea.innerHTML = '<div class="bookshelf" id="bookshelf"></div>';
+            const bookshelf = document.getElementById('bookshelf');
+            
+            filtered.forEach(book => {
+                const category = state.categories.find(c => c.id === book.categoryId) || state.categories[0];
+                const progress = book.progress || 0;
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                card.innerHTML = `
+                    <div class="book-cover" style="background: linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%);">
+                        <div class="book-cover-title">${escapeHtml(book.title || 'Untitled')}</div>
+                        <div class="book-cover-icon">📄</div>
+                    </div>
+                    <div class="book-info">
+                        <div class="book-title">${escapeHtml(book.title || 'Untitled')}</div>
+                        <div class="book-meta">
+                            <span class="book-category" style="background: ${category.color}15; color: ${category.color};">${escapeHtml(category.name)}</span>
+                            <span>${formatFileSize(book.size || 0)}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="progress-text">${progress.toFixed(0)}% · 上次阅读 ${formatDate(book.lastReadAt)}</div>
+                    </div>
+                    <div class="book-actions">
+                        <button class="book-action-btn" onclick="event.stopPropagation(); editBookCategory('${book.id}')">🏷️</button>
+                        <button class="book-action-btn" onclick="event.stopPropagation(); deleteBook('${book.id}')">🗑️</button>
+                    </div>
+                `;
+                card.addEventListener('click', () => openReader(book.id));
+                bookshelf.appendChild(card);
+            });
+        }
+
+        function renderCategories() {
+            categoryList.innerHTML = '';
+            state.categories.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = 'nav-item' + (state.currentCategory === cat.id ? ' active' : '');
+                item.dataset.view = 'shelf';
+                item.dataset.category = cat.id;
+                item.innerHTML = `
+                    <span class="nav-icon" style="color: ${cat.color}">●</span>
+                    <span>${escapeHtml(cat.name)}</span>
+                `;
+                item.addEventListener('click', () => {
+                    state.currentCategory = cat.id;
+                    state.currentFilter = 'category';
+                    pageTitle.textContent = escapeHtml(cat.name);
+                    updateActiveNav();
+                    renderBooks();
+                });
+                categoryList.appendChild(item);
+            });
+
+            // Update import category select
+            const importCategory = document.getElementById('importCategory');
+            importCategory.innerHTML = '<option value="">未分类</option>';
+            state.categories.forEach(cat => {
+                if (cat.id !== 'uncategorized') {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    importCategory.appendChild(option);
+                }
+            });
+        }
+
+        function updateActiveNav() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (state.currentFilter === 'category' && item.dataset.category === state.currentCategory) {
+                    item.classList.add('active');
+                } else if (item.dataset.filter === state.currentFilter) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function getCategoryName(id) {
+            const cat = state.categories.find(c => c.id === id);
+            return cat ? cat.name : '未分类';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-item[data-view="shelf"]').forEach(item => {
+            item.addEventListener('click', () => {
+                const filter = item.dataset.filter;
+                if (filter) {
+                    state.currentFilter = filter;
+                    state.currentCategory = null;
+                    if (filter === 'all') pageTitle.textContent = '全部书籍';
+                    else if (filter === 'recent') pageTitle.textContent = '最近阅读';
+                    else if (filter === 'unread') pageTitle.textContent = '未读';
+                }
+                updateActiveNav();
+                renderBooks();
+            });
+        });
+
+        document.querySelector('.nav-item[data-view="settings"]').addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('active');
+            loadSettingsForm();
+        });
+
+        // Search
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value;
+            renderBooks();
+        });
+
+        // Import Modal
+        const importModal = document.getElementById('importModal');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            state.pendingFiles = [];
+            fileList.innerHTML = '';
+            importModal.classList.add('active');
+        });
+
+        document.getElementById('cancelImport').addEventListener('click', () => {
+            importModal.classList.remove('active');
+        });
+
+        document.getElementById('selectFilesBtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        dropZone.addEventListener('click', (e) => {
+            if (e.target === dropZone || e.target.classList.contains('drop-zone-title') || 
+                e.target.classList.contains('drop-zone-desc') || e.target.classList.contains('drop-zone-icon')) {
+                fileInput.click();
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                    state.pendingFiles.push(file);
+                }
+            });
+            renderFileList();
+        }
+
+        function renderFileList() {
+            fileList.innerHTML = '';
+            state.pendingFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span class="file-item-name">${escapeHtml(file.name)}</span>
+                    <span class="file-item-size">${formatFileSize(file.size)}</span>
+                `;
+                fileList.appendChild(item);
+            });
+        }
+
+        document.getElementById('confirmImport').addEventListener('click', async () => {
+            if (state.pendingFiles.length === 0) {
+                showToast('请先选择 HTML 文件', 'error');
+                return;
+            }
+
+            const categoryId = document.getElementById('importCategory').value || 'uncategorized';
+            const importBtn = document.getElementById('confirmImport');
+            importBtn.innerHTML = '<span class="loading"><span class="spinner"></span>导入中...</span>';
+            importBtn.disabled = true;
+
+            for (const file of state.pendingFiles) {
+                try {
+                    const content = await readFileAsText(file);
+                    const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
+                    const description = extractDescription(content);
+                    const book = {
+                        id: generateId(),
+                        title,
+                        description,
+                        content,
+                        size: file.size,
+                        categoryId,
+                        progress: 0,
+                        scrollPosition: 0,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                        lastReadAt: null
+                    };
+                    await dbPut('books', book);
+                    state.books.push(book);
+                } catch (err) {
+                    console.error('Import error:', err);
+                    showToast(`导入 ${file.name} 失败`, 'error');
+                }
+            }
+
+            importBtn.innerHTML = '导入';
+            importBtn.disabled = false;
+            importModal.classList.remove('active');
+            const importedCount = state.pendingFiles.length;
+            state.pendingFiles = [];
+            fileList.innerHTML = '';
+            renderBooks();
+            showToast(`成功导入 ${importedCount} 本书籍`);
+            
+            if (state.settings.autoSync && state.settings.githubToken) {
+                syncToGitHub();
+            }
+        });
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Category Management
+        const categoryModal = document.getElementById('categoryModal');
+        let editingCategory = null;
+
+        document.getElementById('addCategoryBtn').addEventListener('click', () => {
+            editingCategory = null;
+            document.getElementById('categoryModalTitle').textContent = '新建分类';
+            document.getElementById('categoryNameInput').value = '';
+            categoryModal.classList.add('active');
+        });
+
+        document.getElementById('cancelCategory').addEventListener('click', () => {
+            categoryModal.classList.remove('active');
+        });
+
+        document.getElementById('confirmCategory').addEventListener('click', async () => {
+            const name = document.getElementById('categoryNameInput').value.trim();
+            if (!name) {
+                showToast('请输入分类名称', 'error');
+                return;
+            }
+
+            const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5856d6', '#5ac8fa'];
+            if (editingCategory) {
+                const cat = state.categories.find(c => c.id === editingCategory);
+                if (cat) {
+                    cat.name = name;
+                    await dbPut('categories', cat);
+                }
+            } else {
+                const newCat = {
+                    id: generateId(),
+                    name,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                };
+                state.categories.push(newCat);
+                await dbPut('categories', newCat);
+            }
+
+            categoryModal.classList.remove('active');
+            renderCategories();
+            renderBooks();
+            showToast('分类已保存');
+        });
+
+        // Reader
+        let currentBookId = null;
+        const readerContainer = document.getElementById('readerContainer');
+        const readerContent = document.getElementById('readerContent');
+        const readerInner = document.getElementById('readerInner');
+
+        async function openReader(bookId) {
+            const book = state.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            currentBookId = bookId;
+            document.getElementById('readerTitle').textContent = book.title || 'Untitled';
+            readerContainer.classList.add('active');
+            
+            // Render content in sandboxed iframe for safety
+            readerInner.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.sandbox = 'allow-same-origin';
+            iframe.style.width = '100%';
+            iframe.style.minHeight = '80vh';
+            iframe.style.border = 'none';
+            readerInner.appendChild(iframe);
+
+            // Inject content with base target to avoid navigation issues
+            const blob = new Blob([book.content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            iframe.src = url;
+
+            iframe.onload = () => {
+                if (book.scrollPosition) {
+                    iframe.contentWindow.scrollTo(0, book.scrollPosition);
+                }
+                
+                // Track reading progress
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                const updateProgress = () => {
+                    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
+                    const scrollHeight = doc.documentElement.scrollHeight - doc.documentElement.clientHeight;
+                    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                    book.progress = Math.min(100, Math.max(0, progress));
+                    book.scrollPosition = scrollTop;
+                    book.lastReadAt = Date.now();
+                    document.getElementById('readerProgressBar').style.width = book.progress + '%';
+                    
+                    // Auto-save progress every 2 seconds
+                    if (window.saveProgressTimeout) clearTimeout(window.saveProgressTimeout);
+                    window.saveProgressTimeout = setTimeout(() => {
+                        dbPut('books', book);
+                        if (state.settings.autoSync) syncToGitHub();
+                    }, 2000);
+                };
+                
+                doc.addEventListener('scroll', updateProgress, true);
+                updateProgress();
+            };
+
+            book.lastReadAt = Date.now();
+            await dbPut('books', book);
+            renderBooks();
+        }
+
+        document.getElementById('closeReader').addEventListener('click', () => {
+            readerContainer.classList.remove('active');
+            currentBookId = null;
+            readerInner.innerHTML = '';
+            renderBooks();
+        });
+
+        document.getElementById('readerDelete').addEventListener('click', async () => {
+            if (currentBookId) {
+                await deleteBook(currentBookId);
+                readerContainer.classList.remove('active');
+                currentBookId = null;
+                readerInner.innerHTML = '';
+            }
+        });
+
+        document.getElementById('readerCategory').addEventListener('click', () => {
+            if (currentBookId) editBookCategory(currentBookId);
+        });
+
+        // Book Actions
+        async function deleteBook(id) {
+            if (!confirm('确定要删除这本书吗？')) return;
+            await dbDelete('books', id);
+            state.books = state.books.filter(b => b.id !== id);
+            renderBooks();
+            showToast('书籍已删除');
+            if (state.settings.autoSync) syncToGitHub();
+        }
+
+        async function editBookCategory(id) {
+            const book = state.books.find(b => b.id === id);
+            if (!book) return;
+            
+            const categoryOptions = state.categories.map(c => 
+                `<option value="${c.id}" ${c.id === book.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+            ).join('');
+            
+            const select = document.createElement('select');
+            select.innerHTML = categoryOptions;
+            select.className = 'form-select';
+            select.style.marginBottom = '12px';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay active';
+            modal.innerHTML = `
+                <div class="modal" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <div class="modal-title">选择分类</div>
+                    </div>
+                    <div class="modal-body">
+                        ${select.outerHTML}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                        <button class="btn btn-primary">保存</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const confirmBtn = modal.querySelector('.btn-primary');
+            confirmBtn.addEventListener('click', async () => {
+                const newCat = modal.querySelector('select').value;
+                book.categoryId = newCat;
+                book.updatedAt = Date.now();
+                await dbPut('books', book);
+                renderCategories();
+                renderBooks();
+                modal.remove();
+                showToast('分类已更新');
+                if (state.settings.autoSync) syncToGitHub();
+            });
+        }
+
+        // Settings
+        const settingsModal = document.getElementById('settingsModal');
+
+        document.getElementById('cancelSettings').addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+
+        document.getElementById('saveSettings').addEventListener('click', async () => {
+            state.settings.githubUsername = document.getElementById('githubUsername').value.trim();
+            state.settings.githubRepo = document.getElementById('githubRepo').value.trim();
+            state.settings.githubToken = document.getElementById('githubToken').value.trim();
+            state.settings.autoSync = document.getElementById('autoSync').checked;
+            state.settings.fontSize = parseInt(document.getElementById('fontSizeSetting').value);
+
+            await dbPut('settings', { key: 'config', value: state.settings });
+            updateSyncStatus();
+            settingsModal.classList.remove('active');
+            showToast('设置已保存');
+
+            if (state.settings.githubToken && state.settings.githubRepo && state.settings.githubUsername) {
+                syncFromGitHub();
+            }
+        });
+
+        function loadSettingsForm() {
+            document.getElementById('githubUsername').value = state.settings.githubUsername || '';
+            document.getElementById('githubRepo').value = state.settings.githubRepo || '';
+            document.getElementById('githubToken').value = state.settings.githubToken || '';
+            document.getElementById('autoSync').checked = state.settings.autoSync || false;
+            document.getElementById('fontSizeSetting').value = state.settings.fontSize || 16;
+        }
+
+        function updateSyncStatus() {
+            const connected = !!(state.settings.githubToken && state.settings.githubRepo && state.settings.githubUsername);
+            if (connected) {
+                syncStatus.classList.add('connected');
+                syncStatusText.textContent = `已连接 ${state.settings.githubRepo}`;
+            } else {
+                syncStatus.classList.remove('connected');
+                syncStatusText.textContent = '未连接 GitHub';
+            }
+        }
+
+        // GitHub API Integration
+        function getGitHubHeaders() {
+            return {
+                'Authorization': `token ${state.settings.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function syncFromGitHub() {
+            if (!state.settings.githubToken || !state.settings.githubRepo || !state.settings.githubUsername) {
+                showToast('请先配置 GitHub', 'error');
+                return;
+            }
+
+            const syncBtn = document.getElementById('syncBtn');
+            syncBtn.style.opacity = '0.5';
+            syncBtn.disabled = true;
+
+            try {
+                // 1. Get metadata
+                const metaRes = await fetch(
+                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
+                    { headers: getGitHubHeaders() }
+                );
+                
+                if (metaRes.ok) {
+                    const metaData = await metaRes.json();
+                    const metaContent = JSON.parse(atob(metaData.content));
+                    
+                    if (metaContent.categories) {
+                        state.categories = metaContent.categories;
+                        for (const cat of state.categories) {
+                            await dbPut('categories', cat);
+                        }
+                    }
+                    if (metaContent.books) {
+                        for (const bookMeta of metaContent.books) {
+                            // Try to fetch book content from repository
+                            const bookRes = await fetch(
+                                `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/books/${encodeURIComponent(bookMeta.filename)}`,
+                                { headers: getGitHubHeaders() }
+                            );
+                            if (bookRes.ok) {
+                                const bookData = await bookRes.json();
+                                const content = atob(bookData.content);
+                                const existing = state.books.find(b => b.id === bookMeta.id);
+                                if (existing) {
+                                    existing.content = content;
+                                    existing.title = bookMeta.title;
+                                    existing.categoryId = bookMeta.categoryId;
+                                    existing.progress = bookMeta.progress || existing.progress;
+                                    existing.scrollPosition = bookMeta.scrollPosition || existing.scrollPosition;
+                                    existing.updatedAt = bookMeta.updatedAt;
+                                    await dbPut('books', existing);
+                                } else {
+                                    await dbPut('books', {
+                                        id: bookMeta.id,
+                                        title: bookMeta.title,
+                                        description: bookMeta.description,
+                                        content: content,
+                                        size: content.length,
+                                        categoryId: bookMeta.categoryId,
+                                        progress: bookMeta.progress || 0,
+                                        scrollPosition: bookMeta.scrollPosition || 0,
+                                        createdAt: bookMeta.createdAt,
+                                        updatedAt: bookMeta.updatedAt,
+                                        lastReadAt: bookMeta.lastReadAt
+                                    });
+                                    state.books.push({
+                                        id: bookMeta.id,
+                                        title: bookMeta.title,
+                                        description: bookMeta.description,
+                                        content: content,
+                                        size: content.length,
+                                        categoryId: bookMeta.categoryId,
+                                        progress: bookMeta.progress || 0,
+                                        scrollPosition: bookMeta.scrollPosition || 0,
+                                        createdAt: bookMeta.createdAt,
+                                        updatedAt: bookMeta.updatedAt,
+                                        lastReadAt: bookMeta.lastReadAt
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    renderCategories();
+                    renderBooks();
+                    showToast('已从 GitHub 同步');
+                } else if (metaRes.status === 404) {
+                    showToast('GitHub 仓库为空，将本地数据同步上去', 'error');
+                    await syncToGitHub();
+                } else {
+                    throw new Error(`GitHub API error: ${metaRes.status}`);
+                }
+            } catch (err) {
+                console.error('Sync error:', err);
+                showToast('同步失败: ' + err.message, 'error');
+            } finally {
+                syncBtn.style.opacity = '1';
+                syncBtn.disabled = false;
+            }
+        }
+
+        async function syncToGitHub() {
+            if (!state.settings.githubToken || !state.settings.githubRepo || !state.settings.githubUsername) {
+                showToast('请先配置 GitHub', 'error');
+                return;
+            }
+
+            const syncBtn = document.getElementById('syncBtn');
+            syncBtn.style.opacity = '0.5';
+            syncBtn.disabled = true;
+
+            try {
+                // 1. Get default branch and SHA
+                const repoRes = await fetch(
+                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}`,
+                    { headers: getGitHubHeaders() }
+                );
+                if (!repoRes.ok) throw new Error('无法访问仓库');
+                const repoData = await repoRes.json();
+                const branch = repoData.default_branch || 'main';
+
+                // 2. Upload each book as HTML file
+                const bookMetas = [];
+                for (const book of state.books) {
+                    const filename = `${book.id}.html`;
+                    const path = `books/${filename}`;
+                    const contentEncoded = btoa(unescape(encodeURIComponent(book.content)));
+                    
+                    // Check if file exists to get SHA
+                    const existingRes = await fetch(
+                        `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/${path}`,
+                        { headers: getGitHubHeaders() }
+                    );
+                    let sha = null;
+                    if (existingRes.ok) {
+                        const existingData = await existingRes.json();
+                        sha = existingData.sha;
+                    }
+
+                    const uploadRes = await fetch(
+                        `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/${path}`,
+                        {
+                            method: 'PUT',
+                            headers: getGitHubHeaders(),
+                            body: JSON.stringify({
+                                message: `Update book: ${book.title}`,
+                                content: contentEncoded,
+                                sha: sha,
+                                branch: branch
+                            })
+                        }
+                    );
+                    if (!uploadRes.ok && uploadRes.status !== 422) {
+                        throw new Error(`上传失败: ${uploadRes.status}`);
+                    }
+
+                    bookMetas.push({
+                        id: book.id,
+                        title: book.title,
+                        description: book.description,
+                        filename,
+                        categoryId: book.categoryId,
+                        progress: book.progress,
+                        scrollPosition: book.scrollPosition,
+                        createdAt: book.createdAt,
+                        updatedAt: book.updatedAt,
+                        lastReadAt: book.lastReadAt
+                    });
+                }
+
+                // 3. Upload metadata
+                const metadata = {
+                    version: 1,
+                    updatedAt: Date.now(),
+                    categories: state.categories,
+                    books: bookMetas
+                };
+                const metaEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(metadata, null, 2))));
+                
+                const existingMetaRes = await fetch(
+                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
+                    { headers: getGitHubHeaders() }
+                );
+                let metaSha = null;
+                if (existingMetaRes.ok) {
+                    const existingMeta = await existingMetaRes.json();
+                    metaSha = existingMeta.sha;
+                }
+
+                const metaUploadRes = await fetch(
+                    `https://api.github.com/repos/${state.settings.githubUsername}/${state.settings.githubRepo}/contents/reader-metadata.json`,
+                    {
+                        method: 'PUT',
+                        headers: getGitHubHeaders(),
+                        body: JSON.stringify({
+                            message: 'Update reader metadata',
+                            content: metaEncoded,
+                            sha: metaSha,
+                            branch: branch
+                        })
+                    }
+                );
+                if (!metaUploadRes.ok) throw new Error('元数据同步失败');
+
+                showToast('已同步到 GitHub');
+            } catch (err) {
+                console.error('Sync to GitHub error:', err);
+                showToast('同步失败: ' + err.message, 'error');
+            } finally {
+                syncBtn.style.opacity = '1';
+                syncBtn.disabled = false;
+            }
+        }
+
+        document.getElementById('syncBtn').addEventListener('click', syncFromGitHub);
+
+        // Initialization
+        async function init() {
+            await initDB();
+            
+            // Load categories
+            const savedCategories = await dbGetAll('categories');
+            if (savedCategories.length > 0) {
+                state.categories = savedCategories;
+            } else {
+                for (const cat of state.categories) {
+                    await dbPut('categories', cat);
+                }
+            }
+
+            // Load books
+            const savedBooks = await dbGetAll('books');
+            state.books = savedBooks;
+
+            // Load settings
+            const savedSettings = await dbGet('settings', 'config');
+            if (savedSettings) {
+                state.settings = { ...state.settings, ...savedSettings.value };
+            }
+
+            updateSyncStatus();
+            renderCategories();
+            renderBooks();
+
+            // Auto-sync if configured
+            if (state.settings.autoSync && state.settings.githubToken) {
+                syncFromGitHub();
+            }
+        }
+
+        init().catch(err => {
+            console.error('Init error:', err);
+            showToast('初始化失败', 'error');
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                importModal.classList.remove('active');
+                categoryModal.classList.remove('active');
+                settingsModal.classList.remove('active');
+                if (readerContainer.classList.contains('active')) {
+                    readerContainer.classList.remove('active');
+                    currentBookId = null;
+                    readerInner.innerHTML = '';
+                    renderBooks();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
