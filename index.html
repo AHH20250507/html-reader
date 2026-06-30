@@ -224,6 +224,33 @@
             background: #34c759;
         }
 
+        .cat-delete-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover .cat-delete-btn {
+            color: var(--text-tertiary);
+            background: var(--bg-secondary);
+        }
+
+        .cat-delete-btn:hover {
+            color: #ff3b30 !important;
+            background: rgba(255, 59, 48, 0.08) !important;
+        }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -567,16 +594,43 @@
         }
 
         .reader-header {
-            height: 56px;
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-light);
+            display: none;
+        }
+
+        .reader-close-float {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-light);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            position: relative;
-            z-index: 2;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            z-index: 101;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .reader-container.active .reader-close-float {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .reader-close-float:hover {
+            background: white;
+            color: var(--text-primary);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
         }
 
         .reader-title {
@@ -590,12 +644,13 @@
         }
 
         .reader-progress-container {
-            position: absolute;
-            bottom: 0;
+            position: fixed;
+            top: 0;
             left: 0;
             right: 0;
             height: 3px;
             background: var(--bg-secondary);
+            z-index: 102;
         }
 
         .reader-progress-bar {
@@ -931,13 +986,9 @@
             </div>
 
             <div class="sidebar-footer">
-                <div class="sync-status" id="syncStatus">
-                    <span class="sync-dot"></span>
-                    <span id="syncStatusText">未连接 GitHub</span>
-                </div>
                 <div class="nav-item" data-view="settings">
                     <span class="nav-icon">⚙️</span>
-                    <span>设置</span>
+                    <span>同步设置</span>
                 </div>
             </div>
         </aside>
@@ -954,7 +1005,6 @@
                         <span>+</span>
                         <span>导入 HTML</span>
                     </button>
-                    <button class="btn-icon" id="syncBtn" title="同步到 GitHub">🔄</button>
                 </div>
             </header>
 
@@ -966,16 +1016,9 @@
 
     <!-- Reader -->
     <div class="reader-container" id="readerContainer">
-        <div class="reader-header">
-            <button class="btn-icon" id="closeReader">✕</button>
-            <div class="reader-title" id="readerTitle">Book Title</div>
-            <div class="top-actions">
-                <button class="btn-icon" id="readerCategory" title="分类">🏷️</button>
-                <button class="btn-icon" id="readerDelete" title="删除">🗑️</button>
-            </div>
-            <div class="reader-progress-container">
-                <div class="reader-progress-bar" id="readerProgressBar"></div>
-            </div>
+        <button class="reader-close-float" id="closeReader" title="关闭">✕</button>
+        <div class="reader-progress-container">
+            <div class="reader-progress-bar" id="readerProgressBar"></div>
         </div>
         <div class="reader-content" id="readerContent">
             <div class="reader-inner" id="readerInner"></div>
@@ -1035,21 +1078,17 @@
     <div class="modal-overlay" id="settingsModal" style="align-items: flex-start; padding-top: 60px;">
         <div class="modal" style="max-width: 640px;">
             <div class="modal-header">
-                <div class="modal-title">设置</div>
-                <div class="modal-subtitle">调整阅读偏好</div>
+                <div class="modal-title">同步设置</div>
+                <div class="modal-subtitle">配置 GitHub Token 后，导入、删除书籍和阅读进度会自动同步到仓库。</div>
             </div>
             <div class="modal-body">
                 <div class="settings-card">
-                    <div class="settings-card-title">阅读设置</div>
-                    <div class="settings-card-desc">调整阅读器的默认显示方式。</div>
+                    <div class="settings-card-title">GitHub Token</div>
+                    <div class="settings-card-desc">Token 仅保存在当前浏览器中，用于自动同步书籍和阅读进度。</div>
                     <div class="form-group">
-                        <label class="form-label">默认字体大小</label>
-                        <select class="form-select" id="fontSizeSetting">
-                            <option value="14">14px</option>
-                            <option value="16" selected>16px</option>
-                            <option value="18">18px</option>
-                            <option value="20">20px</option>
-                        </select>
+                        <label class="form-label">Personal Access Token</label>
+                        <input type="password" class="form-input" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxx">
+                        <div class="form-hint">需要 <code>repo</code> 权限。可在 GitHub Settings → Developer settings → Personal access tokens 中生成。</div>
                     </div>
                 </div>
             </div>
@@ -1076,7 +1115,7 @@
             currentCategory: null,
             searchQuery: '',
             settings: {
-                fontSize: 16
+                githubToken: ''
             },
             repo: {
                 owner: 'AHH20250507',
@@ -1202,8 +1241,6 @@
         const pageTitle = document.getElementById('pageTitle');
         const searchInput = document.getElementById('searchInput');
         const categoryList = document.getElementById('categoryList');
-        const syncStatus = document.getElementById('syncStatus');
-        const syncStatusText = document.getElementById('syncStatusText');
 
         // Rendering
         function renderBooks() {
@@ -1279,11 +1316,19 @@
                 item.className = 'nav-item' + (state.currentCategory === cat.id ? ' active' : '');
                 item.dataset.view = 'shelf';
                 item.dataset.category = cat.id;
+                item.style.position = 'relative';
+                item.style.paddingRight = '36px';
                 item.innerHTML = `
                     <span class="nav-icon" style="color: ${cat.color}">●</span>
-                    <span>${escapeHtml(cat.name)}</span>
+                    <span style="flex:1">${escapeHtml(cat.name)}</span>
+                    ${cat.id !== 'uncategorized' ? `<span class="cat-delete-btn" data-cat-id="${cat.id}" title="删除分类">✕</span>` : ''}
                 `;
-                item.addEventListener('click', () => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('cat-delete-btn')) {
+                        e.stopPropagation();
+                        deleteCategory(cat.id);
+                        return;
+                    }
                     state.currentCategory = cat.id;
                     state.currentFilter = 'category';
                     pageTitle.textContent = escapeHtml(cat.name);
@@ -1304,6 +1349,36 @@
                     importCategory.appendChild(option);
                 }
             });
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm('确定要删除这个分类吗？该分类下的书籍将移动到“未分类”。')) return;
+            
+            // Update books in this category
+            const booksInCategory = state.books.filter(b => b.categoryId === id);
+            for (const book of booksInCategory) {
+                book.categoryId = 'uncategorized';
+                book.updatedAt = Date.now();
+                await dbPut('books', book);
+            }
+            
+            // Remove category
+            state.categories = state.categories.filter(c => c.id !== id);
+            await dbDelete('categories', id);
+            
+            if (state.currentCategory === id) {
+                state.currentCategory = null;
+                state.currentFilter = 'all';
+                pageTitle.textContent = '全部书籍';
+            }
+            
+            renderCategories();
+            updateActiveNav();
+            renderBooks();
+            showToast('分类已删除');
+
+            // Auto sync to GitHub
+            syncToGitHub();
         }
 
         function updateActiveNav() {
@@ -1429,6 +1504,14 @@
                 return;
             }
 
+            if (!state.settings.githubToken) {
+                showToast('请先配置 GitHub Token', 'error');
+                importModal.classList.remove('active');
+                document.getElementById('settingsModal').classList.add('active');
+                loadSettingsForm();
+                return;
+            }
+
             const categoryId = document.getElementById('importCategory').value || 'uncategorized';
             const importBtn = document.getElementById('confirmImport');
             importBtn.innerHTML = '<span class="loading"><span class="spinner"></span>导入中...</span>';
@@ -1468,6 +1551,9 @@
             fileList.innerHTML = '';
             renderBooks();
             showToast(`成功导入 ${importedCount} 本书籍`);
+
+            // Auto sync to GitHub after import
+            syncToGitHub();
         });
 
         function readFileAsText(file) {
@@ -1535,7 +1621,6 @@
             if (!book) return;
 
             currentBookId = bookId;
-            document.getElementById('readerTitle').textContent = book.title || 'Untitled';
             readerContainer.classList.add('active');
             
             // Render content in sandboxed iframe for safety
@@ -1568,11 +1653,12 @@
                     book.lastReadAt = Date.now();
                     document.getElementById('readerProgressBar').style.width = book.progress + '%';
                     
-                    // Auto-save progress every 2 seconds
+                    // Auto-save progress every 5 seconds and sync to GitHub
                     if (window.saveProgressTimeout) clearTimeout(window.saveProgressTimeout);
                     window.saveProgressTimeout = setTimeout(() => {
                         dbPut('books', book);
-                    }, 2000);
+                        syncToGitHub();
+                    }, 5000);
                 };
                 
                 doc.addEventListener('scroll', updateProgress, true);
@@ -1591,19 +1677,6 @@
             renderBooks();
         });
 
-        document.getElementById('readerDelete').addEventListener('click', async () => {
-            if (currentBookId) {
-                await deleteBook(currentBookId);
-                readerContainer.classList.remove('active');
-                currentBookId = null;
-                readerInner.innerHTML = '';
-            }
-        });
-
-        document.getElementById('readerCategory').addEventListener('click', () => {
-            if (currentBookId) editBookCategory(currentBookId);
-        });
-
         // Book Actions
         async function deleteBook(id) {
             if (!confirm('确定要删除这本书吗？')) return;
@@ -1611,6 +1684,9 @@
             state.books = state.books.filter(b => b.id !== id);
             renderBooks();
             showToast('书籍已删除');
+
+            // Auto sync to GitHub after delete
+            syncToGitHub();
         }
 
         async function editBookCategory(id) {
@@ -1654,6 +1730,9 @@
                 renderBooks();
                 modal.remove();
                 showToast('分类已更新');
+
+                // Auto sync to GitHub after category change
+                syncToGitHub();
             });
         }
 
@@ -1665,29 +1744,31 @@
         });
 
         document.getElementById('saveSettings').addEventListener('click', async () => {
-            state.settings.fontSize = parseInt(document.getElementById('fontSizeSetting').value);
+            state.settings.githubToken = document.getElementById('githubToken').value.trim();
 
             await dbPut('settings', { key: 'config', value: state.settings });
-            updateSyncStatus();
             settingsModal.classList.remove('active');
             showToast('设置已保存');
         });
 
         function loadSettingsForm() {
-            document.getElementById('fontSizeSetting').value = state.settings.fontSize || 16;
+            document.getElementById('githubToken').value = state.settings.githubToken || '';
         }
 
         function updateSyncStatus() {
-            syncStatus.classList.add('connected');
-            syncStatusText.textContent = `已连接 ${state.repo.name}`;
+            // No-op: removed status indicator per user request
         }
 
         // GitHub API Integration
-        async function syncFromGitHub() {
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.style.opacity = '0.5';
-            syncBtn.disabled = true;
+        function getGitHubHeaders() {
+            return {
+                'Authorization': `token ${state.settings.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            };
+        }
 
+        async function syncFromGitHub() {
             try {
                 const repoApiBase = `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`;
                 
@@ -1695,9 +1776,9 @@
                 const listRes = await fetch(`${repoApiBase}/contents/books`);
                 if (!listRes.ok) {
                     if (listRes.status === 404) {
-                        showToast('仓库中还没有 books 目录', 'error');
+                        console.log('仓库中还没有 books 目录');
                     } else {
-                        throw new Error(`GitHub API error: ${listRes.status}`);
+                        console.error(`GitHub API error: ${listRes.status}`);
                     }
                     return;
                 }
@@ -1769,17 +1850,147 @@
 
                 renderCategories();
                 renderBooks();
-                showToast(`已从 GitHub 加载 ${loadedCount} 本书籍`);
+                if (loadedCount > 0) showToast(`已从 GitHub 加载 ${loadedCount} 本书籍`);
             } catch (err) {
                 console.error('Sync error:', err);
                 showToast('同步失败: ' + err.message, 'error');
-            } finally {
-                syncBtn.style.opacity = '1';
-                syncBtn.disabled = false;
             }
         }
 
-        document.getElementById('syncBtn').addEventListener('click', syncFromGitHub);
+        async function syncToGitHub() {
+            if (!state.settings.githubToken) {
+                showToast('请先配置 GitHub Token', 'error');
+                document.getElementById('settingsModal').classList.add('active');
+                loadSettingsForm();
+                return;
+            }
+
+            try {
+                // Get default branch
+                const repoRes = await fetch(
+                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`,
+                    { headers: getGitHubHeaders() }
+                );
+                if (!repoRes.ok) throw new Error('无法访问仓库');
+                const repoData = await repoRes.json();
+                const branch = repoData.default_branch || 'main';
+
+                // Get existing files in books directory to know what to delete
+                const listRes = await fetch(
+                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books`,
+                    { headers: getGitHubHeaders() }
+                );
+                const existingFiles = listRes.ok ? await listRes.json() : [];
+                const existingHtmlFiles = existingFiles.filter(f => f.type === 'file' && (f.name.endsWith('.html') || f.name.endsWith('.htm')));
+                const currentIds = new Set(state.books.map(b => b.id));
+
+                // Delete files that are no longer in local books
+                for (const file of existingHtmlFiles) {
+                    const fileId = file.name.replace(/\.html?$/, '');
+                    if (!currentIds.has(fileId)) {
+                        await fetch(
+                            `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books/${encodeURIComponent(file.name)}`,
+                            {
+                                method: 'DELETE',
+                                headers: getGitHubHeaders(),
+                                body: JSON.stringify({
+                                    message: `Delete book: ${file.name}`,
+                                    sha: file.sha,
+                                    branch: branch
+                                })
+                            }
+                        );
+                    }
+                }
+
+                // Upload/update each book
+                const bookMetas = [];
+                for (const book of state.books) {
+                    const filename = `${book.id}.html`;
+                    const path = `books/${filename}`;
+                    const contentEncoded = btoa(unescape(encodeURIComponent(book.content)));
+                    
+                    const existingRes = await fetch(
+                        `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/${path}`,
+                        { headers: getGitHubHeaders() }
+                    );
+                    let sha = null;
+                    if (existingRes.ok) {
+                        const existingData = await existingRes.json();
+                        sha = existingData.sha;
+                    }
+
+                    const uploadRes = await fetch(
+                        `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/${path}`,
+                        {
+                            method: 'PUT',
+                            headers: getGitHubHeaders(),
+                            body: JSON.stringify({
+                                message: `Update book: ${book.title}`,
+                                content: contentEncoded,
+                                sha: sha,
+                                branch: branch
+                            })
+                        }
+                    );
+                    if (!uploadRes.ok && uploadRes.status !== 422) {
+                        throw new Error(`上传失败: ${uploadRes.status}`);
+                    }
+
+                    bookMetas.push({
+                        id: book.id,
+                        title: book.title,
+                        description: book.description,
+                        filename,
+                        categoryId: book.categoryId,
+                        progress: book.progress,
+                        scrollPosition: book.scrollPosition,
+                        createdAt: book.createdAt,
+                        updatedAt: book.updatedAt,
+                        lastReadAt: book.lastReadAt
+                    });
+                }
+
+                // Upload metadata
+                const metadata = {
+                    version: 1,
+                    updatedAt: Date.now(),
+                    categories: state.categories,
+                    books: bookMetas
+                };
+                const metaEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(metadata, null, 2))));
+                
+                const existingMetaRes = await fetch(
+                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/reader-metadata.json`,
+                    { headers: getGitHubHeaders() }
+                );
+                let metaSha = null;
+                if (existingMetaRes.ok) {
+                    const existingMeta = await existingMetaRes.json();
+                    metaSha = existingMeta.sha;
+                }
+
+                const metaUploadRes = await fetch(
+                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/reader-metadata.json`,
+                    {
+                        method: 'PUT',
+                        headers: getGitHubHeaders(),
+                        body: JSON.stringify({
+                            message: 'Update reader metadata',
+                            content: metaEncoded,
+                            sha: metaSha,
+                            branch: branch
+                        })
+                    }
+                );
+                if (!metaUploadRes.ok) throw new Error('元数据同步失败');
+
+                showToast('已同步到 GitHub');
+            } catch (err) {
+                console.error('Sync to GitHub error:', err);
+                showToast('同步失败: ' + err.message, 'error');
+            }
+        }
 
         // Initialization
         async function init() {
@@ -1805,7 +2016,6 @@
                 state.settings = { ...state.settings, ...savedSettings.value };
             }
 
-            updateSyncStatus();
             renderCategories();
             renderBooks();
 
