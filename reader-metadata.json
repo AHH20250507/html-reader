@@ -1,25 +1,25 @@
 {
   "version": 1,
-  "updatedAt": 1782789189662,
+  "updatedAt": 1782789196626,
   "categories": [
     {
       "id": "article",
-      "name": "文章",
+      "name": "æç« ",
       "color": "#34c759"
     },
     {
       "id": "novel",
-      "name": "小说",
+      "name": "å°è¯´",
       "color": "#af52de"
     },
     {
       "id": "tech",
-      "name": "技术文档",
+      "name": "ææ¯ææ¡£",
       "color": "#007aff"
     },
     {
       "id": "uncategorized",
-      "name": "未分类",
+      "name": "æªåç±»",
       "color": "#86868b"
     }
   ],
