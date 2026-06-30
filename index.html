@@ -1356,12 +1356,12 @@
             }
         }
 
-        // Detect garbled text (common UTF-8 decoded as Latin1 patterns)
+        // Detect garbled text (UTF-8 bytes decoded as Latin1, common for Chinese mojibake)
         function isGarbledText(text) {
             if (!text) return false;
-            // If the text contains mostly ASCII but has lone high-bytes or typical garbled patterns
-            // Common garbled Chinese appears as characters like Ã, Â, etc. mixed
-            const garbledPattern = /[\u00C0-\u00FF]{2,}/;
+            // Mojibake Chinese typically shows as sequences of Latin-1 Supplement / Extended-A chars
+            // e.g. "æªåç±»" for "未分类"
+            const garbledPattern = /[\u00C0-\u017F]{2,}/;
             return garbledPattern.test(text);
         }
 
@@ -2146,9 +2146,17 @@
                 }
 
                 if (metaContent && metaContent.categories) {
-                    state.categories = metaContent.categories;
-                    for (const cat of state.categories) {
-                        await dbPut('categories', cat);
+                    // If remote categories are garbled, keep local defaults and re-sync later
+                    const hasGarbledCategory = metaContent.categories.some(c => isGarbledText(c.name));
+                    if (!hasGarbledCategory) {
+                        state.categories = metaContent.categories;
+                        for (const cat of state.categories) {
+                            await dbPut('categories', cat);
+                        }
+                    } else {
+                        console.warn('Remote categories are garbled, keeping local defaults');
+                        // Mark that we need to re-upload corrected metadata
+                        window.needMetaResync = true;
                     }
                 }
 
@@ -2169,13 +2177,14 @@
                     remoteIds.add(id);
                     const meta = bookMetas.find(b => b.id === id) || {};
                     
+                    const validCategoryId = (catId) => state.categories.some(c => c.id === catId) ? catId : 'uncategorized';
                     const existing = state.books.find(b => b.id === id);
                     if (existing) {
                         existing.content = content;
                         existing.title = title;
                         existing.description = description;
                         existing.size = content.length;
-                        existing.categoryId = meta.categoryId || existing.categoryId;
+                        existing.categoryId = validCategoryId(meta.categoryId) || existing.categoryId;
                         existing.progress = meta.progress || existing.progress || 0;
                         existing.scrollPosition = meta.scrollPosition || existing.scrollPosition || 0;
                         existing.pinned = !!meta.pinned;
@@ -2188,7 +2197,7 @@
                             description,
                             content,
                             size: content.length,
-                            categoryId: meta.categoryId || 'uncategorized',
+                            categoryId: validCategoryId(meta.categoryId),
                             progress: meta.progress || 0,
                             scrollPosition: meta.scrollPosition || 0,
                             pinned: !!meta.pinned,
@@ -2396,7 +2405,13 @@
             renderCategories();
             renderBooks();
 
-            syncFromGitHub();
+            syncFromGitHub().then(() => {
+                if (window.needMetaResync && state.settings.githubToken) {
+                    console.log('Re-syncing corrected metadata to GitHub');
+                    window.needMetaResync = false;
+                    return syncToGitHub();
+                }
+            }).catch(err => console.error('Initial sync error:', err));
         }
 
         init().catch(err => {
