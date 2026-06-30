@@ -2140,7 +2140,7 @@
                     const metaRes = await fetch(`${repoApiBase}/contents/reader-metadata.json`);
                     if (metaRes.ok) {
                         const metaData = await metaRes.json();
-                        metaContent = JSON.parse(atob(metaData.content));
+                        metaContent = JSON.parse(decodeURIComponent(escape(atob(metaData.content))));
                     }
                 } catch (e) {
                     console.log('No metadata found');
@@ -2163,7 +2163,7 @@
                     const bookRes = await fetch(`${repoApiBase}/contents/books/${encodeURIComponent(file.name)}`);
                     if (!bookRes.ok) continue;
                     const bookData = await bookRes.json();
-                    const content = atob(bookData.content);
+                    const content = decodeURIComponent(escape(atob(bookData.content)));
                     const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
                     const description = extractDescription(content);
                     const id = file.name.replace(/\.html?$/, '');
@@ -2203,12 +2203,15 @@
                     loadedCount++;
                 }
 
-                // Remove local books that no longer exist on GitHub
-                const localOnlyBooks = state.books.filter(b => !remoteIds.has(b.id));
-                for (const book of localOnlyBooks) {
-                    await dbDelete('books', book.id);
+                // Only remove local books if GitHub actually returned some books,
+                // otherwise keep local books to avoid wiping user data on sync failures
+                if (htmlFiles.length > 0) {
+                    const localOnlyBooks = state.books.filter(b => !remoteIds.has(b.id));
+                    for (const book of localOnlyBooks) {
+                        await dbDelete('books', book.id);
+                    }
+                    state.books = state.books.filter(b => remoteIds.has(b.id));
                 }
-                state.books = state.books.filter(b => remoteIds.has(b.id));
 
                 renderCategories();
                 renderBooks();
