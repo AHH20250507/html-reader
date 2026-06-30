@@ -2025,11 +2025,16 @@
         });
 
         document.getElementById('saveSettings').addEventListener('click', async () => {
-            state.settings.githubToken = document.getElementById('githubToken').value.trim();
+            try {
+                state.settings.githubToken = document.getElementById('githubToken').value.trim();
 
-            await dbPut('settings', { key: 'config', value: state.settings });
-            settingsModal.classList.remove('active');
-            showToast('设置已保存');
+                await dbPut('settings', { key: 'config', value: state.settings });
+                settingsModal.classList.remove('active');
+                showToast('设置已保存');
+            } catch (err) {
+                console.error('Save settings error:', err);
+                showToast('保存失败: ' + (err && err.message ? err.message : '未知错误'), 'error');
+            }
         });
 
         function loadSettingsForm() {
