@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782795380610,
+  "updatedAt": 1782795674040,
   "categories": [
     {
       "id": "uncategorized",
@@ -32,6 +32,15 @@
       "pinned": false,
       "importDate": 1782795367434,
       "lastRead": 1782795380610
+    },
+    {
+      "id": "book_1782795672113_2o9814",
+      "title": "ai_erp产品说明书 (0629)",
+      "filename": "book_1782795672113_2o9814.html",
+      "category": "uncategorized",
+      "pinned": false,
+      "importDate": 1782795674039,
+      "lastRead": 0
     }
   ]
 }
