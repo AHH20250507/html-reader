@@ -355,6 +355,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="testToken()" style="margin-right:auto">测试连接</button>
         <button class="btn-cancel" onclick="hideSettings()">取消</button>
+        <button class="btn btn-ghost" onclick="saveSettingsTemp()">临时登录</button>
         <button class="btn btn-primary" onclick="saveSettings()">保存</button>
       </div>
     </div>
@@ -383,8 +384,10 @@ const GH_USER='AHH20250507',GH_REPO='html-reader';
 const GH_API=`https://api.github.com/repos/${GH_USER}/${GH_REPO}`;
 const META_PATH='reader-metadata.json',BOOKS_DIR='books';
 
-function setGH(t){localStorage.setItem('hr_gh_token',t)}
-function getGHToken(){return localStorage.getItem('hr_gh_token')||''}
+let sessionToken='';
+function setGH(t,sessionOnly){if(sessionOnly){sessionToken=t}else{sessionToken='';localStorage.setItem('hr_gh_token',t)}}
+function getGHToken(){return sessionToken||localStorage.getItem('hr_gh_token')||''}
+function isSessionOnly(){return!!sessionToken}
 
 let state={categories:[{id:'uncategorized',name:'未分类',color:'#86868b'}],books:[],currentCat:'all',viewMode:'grid',searchQuery:''};
 let pendingFiles=[],selectedColor='#007aff';
@@ -592,10 +595,11 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('searchInput').focus()}
 });
 
-function showSettings(){document.getElementById('settingsModal').classList.add('active');document.getElementById('settingsToken').value=getGHToken();document.getElementById('settingsStatus').innerHTML=''}
+function showSettings(){document.getElementById('settingsModal').classList.add('active');document.getElementById('settingsToken').value=getGHToken();document.getElementById('settingsStatus').innerHTML=isSessionOnly()?'<span style="color:var(--orange)">⚠️ 当前为临时登录，关闭页面后需重新输入</span>':''}
 function hideSettings(){document.getElementById('settingsModal').classList.remove('active')}
 async function testToken(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return;const el=document.getElementById('settingsStatus');el.innerHTML='<span style="color:var(--text2)">连接中...</span>';try{const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}`,{headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}});if(r.ok)el.innerHTML='<span style="color:var(--green)">✓ 连接成功</span>';else{const e=await r.json().catch(()=>({}));el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'Token 无效')}</span>`}}catch(e){el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'网络错误')}</span>`}}
-function saveSettings(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token);hideSettings();toast('设置已保存');init()}
+function saveSettings(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,false);hideSettings();toast('设置已保存');init()}
+function saveSettingsTemp(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,true);hideSettings();toast('临时登录成功');init()}
 
 async function init(){restoreSidebar();renderCategories();renderBooks();if(!getGHToken()){showSettings();return}try{await loadMetadata();renderCategories();renderBooks()}catch(e){if(e.message.includes('401')||e.message.includes('403')){showSettings();toast('Token 无效，请重新设置','error')}else toast('加载失败: '+e.message,'error')}}
 init();
