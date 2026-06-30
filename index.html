@@ -424,8 +424,23 @@ let pendingFiles = [];
 let selectedColor = '#007aff';
 
 // ===== GITHUB API =====
+function cleanToken(t) { return (t || '').replace(/\u2026/g, '...').replace(/[^\x20-\x7E]/g, '').trim(); }
+
+function b64Encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
+function b64Decode(b64) {
+  const binary = atob(b64.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 async function ghFetch(path, opts = {}) {
-  const token = getGHToken();
+  const token = cleanToken(getGHToken());
   if (!token) { showSettings(); throw new Error('No token'); }
   const url = path.startsWith('http') ? path : `${GH_API}/contents/${path}`;
   const res = await fetch(url, {
@@ -436,24 +451,27 @@ async function ghFetch(path, opts = {}) {
       ...(opts.headers || {})
     }
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `GitHub API error: ${res.status}`);
+  }
   return res.json();
 }
 
 async function getFile(path) {
   try {
     const data = await ghFetch(path);
-    return { content: atob(data.content.replace(/\n/g, '')), sha: data.sha };
+    return { content: b64Decode(data.content), sha: data.sha };
   } catch (e) {
-    if (e.message.includes('404')) return null;
+    if (e.message.includes('404') || e.message.includes('Not Found')) return null;
     throw e;
   }
 }
 
 async function putFile(path, content, sha = null, message = 'Update') {
-  const token = getGHToken();
+  const token = cleanToken(getGHToken());
   if (!token) { showSettings(); throw new Error('No token'); }
-  const body = { message, content: btoa(unescape(encodeURIComponent(content))), branch: 'main' };
+  const body = { message, content: b64Encode(content), branch: 'main' };
   if (sha) body.sha = sha;
   const url = `${GH_API}/contents/${path}`;
   const res = await fetch(url, {
@@ -464,12 +482,15 @@ async function putFile(path, content, sha = null, message = 'Update') {
     },
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error(`Put file failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Put file failed: ${res.status}`);
+  }
   return res.json();
 }
 
 async function deleteFile(path, sha, message = 'Delete') {
-  const token = getGHToken();
+  const token = cleanToken(getGHToken());
   if (!token) { showSettings(); throw new Error('No token'); }
   const url = `${GH_API}/contents/${path}`;
   const res = await fetch(url, {
@@ -480,7 +501,10 @@ async function deleteFile(path, sha, message = 'Delete') {
     },
     body: JSON.stringify({ message, sha, branch: 'main' })
   });
-  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Delete failed: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -502,18 +526,14 @@ async function loadMetadata() {
 }
 
 async function saveMetadata() {
-  try {
-    const data = {
-      version: 1,
-      updatedAt: Date.now(),
-      categories: state.categories,
-      books: state.books
-    };
-    const res = await putFile(META_PATH, JSON.stringify(data, null, 2), metaSha, 'Update metadata');
-    metaSha = res.content.sha;
-  } catch (e) {
-    console.error('Save metadata failed:', e);
-  }
+  const data = {
+    version: 1,
+    updatedAt: Date.now(),
+    categories: state.categories,
+    books: state.books
+  };
+  const res = await putFile(META_PATH, JSON.stringify(data, null, 2), metaSha, 'Update metadata');
+  metaSha = res.content.sha;
 }
 
 // ===== RENDERING =====
@@ -728,6 +748,9 @@ async function doImport() {
   progressEl.style.display = 'block';
   document.getElementById('importBtn').disabled = true;
 
+  let successCount = 0;
+  let lastError = '';
+
   for (let i = 0; i < pendingFiles.length; i++) {
     const file = pendingFiles[i];
     const pct = Math.round((i / pendingFiles.length) * 100);
@@ -751,23 +774,33 @@ async function doImport() {
         importDate: Date.now(),
         lastRead: 0
       });
+      successCount++;
     } catch (e) {
       console.error('Import failed:', e);
-      toast(`导入 ${file.name} 失败: ${e.message}`, 'error');
+      lastError = e.message || String(e);
     }
   }
 
   barFill.style.width = '100%';
-  statusEl.textContent = '导入完成！';
 
-  await saveMetadata();
-  renderCategories();
-  renderBooks();
+  if (successCount > 0) {
+    await saveMetadata().catch(e => console.error('Save metadata failed:', e));
+    renderCategories();
+    renderBooks();
+  }
 
-  setTimeout(() => {
-    hideImport();
-    toast(`成功导入 ${pendingFiles.length} 个文件`);
-  }, 500);
+  document.getElementById('importBtn').disabled = false;
+
+  if (successCount === pendingFiles.length) {
+    statusEl.textContent = '导入完成！';
+    setTimeout(() => { hideImport(); toast(`成功导入 ${successCount} 个文件`); }, 500);
+  } else if (successCount > 0) {
+    statusEl.textContent = `部分完成：${successCount}/${pendingFiles.length} 成功`;
+    toast(`导入 ${successCount}/${pendingFiles.length} 个文件，最后一个错误: ${lastError}`, 'error');
+  } else {
+    statusEl.textContent = '导入失败';
+    toast(`导入失败: ${lastError}`, 'error');
+  }
 }
 
 function readFile(file) {
@@ -1103,7 +1136,7 @@ function hideSettings() {
 }
 
 async function testToken() {
-  const token = document.getElementById('settingsToken').value.trim();
+  const token = cleanToken(document.getElementById('settingsToken').value);
   if (!token) return;
   const statusEl = document.getElementById('settingsStatus');
   statusEl.innerHTML = '<span style="color:var(--text2)">连接中...</span>';
@@ -1114,15 +1147,16 @@ async function testToken() {
     if (res.ok) {
       statusEl.innerHTML = '<span style="color:var(--green)">✓ 连接成功</span>';
     } else {
-      statusEl.innerHTML = '<span style="color:var(--red)">✗ Token 无效或权限不足</span>';
+      const err = await res.json().catch(() => ({}));
+      statusEl.innerHTML = `<span style="color:var(--red)">✗ ${escHtml(err.message || 'Token 无效或权限不足')}</span>`;
     }
   } catch (e) {
-    statusEl.innerHTML = '<span style="color:var(--red)">✗ 网络错误</span>';
+    statusEl.innerHTML = `<span style="color:var(--red)">✗ ${escHtml(e.message || '网络错误')}</span>`;
   }
 }
 
 function saveSettings() {
-  const token = document.getElementById('settingsToken').value.trim();
+  const token = cleanToken(document.getElementById('settingsToken').value);
   if (!token) return toast('请输入 Token', 'error');
   setGH(token);
   hideSettings();
