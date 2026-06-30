@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782790416673,
+  "updatedAt": 1782790429988,
   "categories": [
     {
       "id": "uncategorized",
@@ -36,6 +36,19 @@
       "createdAt": 1782789669485,
       "updatedAt": 1782790405202,
       "lastReadAt": 1782790408908
+    },
+    {
+      "id": "id_1782790425056_nbpdv2rpf",
+      "title": "AI ERP 智能管家 - 产品说明书",
+      "description": "",
+      "filename": "id_1782790425056_nbpdv2rpf.html",
+      "categoryId": "uncategorized",
+      "progress": 0,
+      "scrollPosition": 0,
+      "pinned": false,
+      "createdAt": 1782790425056,
+      "updatedAt": 1782790425056,
+      "lastReadAt": null
     }
   ]
 }
