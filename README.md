@@ -1,53 +1,26 @@
 # HTML Reader
 
-一个高级简约的网页版 HTML 阅读器，采用苹果风格设计，支持书架管理、分类、搜索、阅读进度记忆以及自动 GitHub 同步。
+一个优雅的 Web 端 HTML 阅读器，具有书架管理、阅读进度记忆、分类管理等功能。
 
-## 特性
+## ✨ 功能
 
-- 📚 **书架浏览**：网格化展示所有 HTML 电子书
-- 📥 **导入 HTML**：拖拽或点击上传，自动同步到 GitHub 公开仓库
-- 🔍 **实时搜索**：按书名、分类快速查找
-- 🏷️ **分类管理**：自定义分类，支持新建和删除
-- 📖 **阅读进度**：自动记录滚动位置和阅读百分比，并同步到 GitHub
-- ☁️ **自动 GitHub 同步**：导入、删除、分类变更、阅读进度都会自动同步到仓库
+- 📚 **书架浏览** - 网格/列表两种视图模式
+- 📥 **导入 HTML** - 支持文件选择和拖放导入
+- 📌 **置顶文档** - 重要文档一键置顶
+- 📂 **分类管理** - 自定义分类，支持新建和删除
+- 🔍 **搜索** - 快速搜索文档标题
+- 📊 **阅读进度** - 自动记忆滚动位置
+- ⬇️ **下载** - 随时下载原始 HTML 文件
+- 🎨 **Apple 风格 UI** - 简洁优雅的界面设计
 
-## 在线访问
+## 🚀 使用
 
-本仓库已启用 GitHub Pages，直接访问：
+1. 打开 [HTML Reader](https://ahh20250507.github.io/html-reader/)
+2. 在设置中输入 GitHub Personal Access Token
+3. 开始导入和阅读 HTML 文档
 
-https://AHH20250507.github.io/html-reader
+## 🔒 隐私
 
-## 使用说明
-
-1. 打开上面的链接，进入 HTML Reader。
-2. 点击左侧 **同步设置**，输入你的 GitHub Personal Access Token（需要 `repo` 权限）。Token 只会保存在当前浏览器中。
-3. 点击右上角 **导入 HTML**，选择或拖拽 HTML 文件。
-4. 导入成功后，书籍会自动上传到 GitHub 仓库的 `books/` 目录，并出现在书架上。
-5. 点击书籍封面即可阅读；阅读进度会自动保存并同步。
-6. 删除书籍后，GitHub 仓库中的对应文件也会自动删除。
-
-## 目录结构
-
-```
-html-reader/
-├── index.html           # 单页应用（阅读器）
-├── README.md            # 说明文档
-└── books/               # 存放 HTML 文档
-    └── (your books)
-```
-
-书架分类和阅读进度通过仓库根目录的 `reader-metadata.json` 同步。
-
-## 技术栈
-
-- 原生 HTML5 / CSS3 / JavaScript
-- IndexedDB（本地缓存）
-- GitHub REST API（云端同步）
-
-## 本地预览
-
-```bash
-python -m http.server 8080
-```
-
-然后打开 http://localhost:8080。
+- Token 仅存储在浏览器 localStorage 中
+- 所有数据存储在你的 GitHub 仓库中
+- 不收集任何个人信息
