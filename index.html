@@ -1,2434 +1,1159 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HTML Reader</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f5f5f7;
-            --bg-tertiary: #fafafa;
-            --text-primary: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --text-tertiary: #86868b;
-            --accent: #007aff;
-            --accent-hover: #0056b3;
-            --border: #d2d2d7;
-            --border-light: #e8e8ed;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
-            --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 18px;
-            --radius-xl: 24px;
-            --sidebar-width: 260px;
-            --sidebar-collapsed-width: 64px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
-            overflow: hidden;
-        }
-
-        button {
-            font-family: inherit;
-            cursor: pointer;
-            border: none;
-            background: none;
-        }
-
-        input, textarea, select {
-            font-family: inherit;
-            outline: none;
-        }
-
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border-light);
-            display: flex;
-            flex-direction: column;
-            padding: 20px 16px;
-            z-index: 10;
-            transition: width 0.3s ease, transform 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .sidebar.collapsed {
-            width: var(--sidebar-collapsed-width);
-            padding: 20px 12px;
-        }
-
-        .sidebar.collapsed .brand-text,
-        .sidebar.collapsed .brand-sub,
-        .sidebar.collapsed .nav-title,
-        .sidebar.collapsed .nav-item span:last-child,
-        .sidebar.collapsed .add-category-btn span:last-child,
-        .sidebar.collapsed .sidebar-footer span:last-child {
-            display: none;
-        }
-
-        .sidebar.collapsed .nav-item,
-        .sidebar.collapsed .add-category-btn {
-            justify-content: center;
-            padding: 10px;
-        }
-
-        .sidebar.collapsed .nav-icon {
-            margin: 0;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 4px 20px;
-            border-bottom: 1px solid var(--border-light);
-            margin-bottom: 20px;
-        }
-
-        .brand-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            overflow: hidden;
-        }
-
-        .brand-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,122,255,0.25);
-            flex-shrink: 0;
-        }
-
-        .brand-text {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-            white-space: nowrap;
-        }
-
-        .brand-sub {
-            font-size: 11px;
-            color: var(--text-tertiary);
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        .sidebar-toggle {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-tertiary);
-            font-size: 14px;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-
-        .sidebar-toggle:hover {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
-        .nav-section {
-            margin-bottom: 20px;
-        }
-
-        .nav-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            padding: 0 12px;
-            margin-bottom: 10px;
-            white-space: nowrap;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            margin-bottom: 2px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .nav-item:hover {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
-        .nav-item.active {
-            background: var(--text-primary);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .nav-icon {
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .category-list {
-            max-height: 220px;
-            overflow-y: auto;
-        }
-
-        .category-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .category-list::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        .add-category-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: var(--radius-md);
-            color: var(--accent);
-            font-size: 13px;
-            font-weight: 500;
-            margin-top: 6px;
-            transition: background 0.2s;
-            cursor: pointer;
-        }
-
-        .add-category-btn:hover {
-            background: rgba(0,122,255,0.08);
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-light);
-        }
-
-        .cat-delete-btn {
-            position: absolute;
-            right: 6px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 22px;
-            height: 22px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .nav-item:hover .cat-delete-btn {
-            color: var(--text-tertiary);
-            background: var(--bg-secondary);
-        }
-
-        .cat-delete-btn:hover {
-            color: #ff3b30 !important;
-            background: rgba(255, 59, 48, 0.08) !important;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .top-bar {
-            height: 64px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            z-index: 5;
-            gap: 12px;
-        }
-
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 18px;
-            background: var(--bg-secondary);
-        }
-
-        .page-title {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            white-space: nowrap;
-        }
-
-        .top-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-shrink: 0;
-        }
-
-        .search-box {
-            position: relative;
-            width: 280px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px 14px 10px 38px;
-            border: 1px solid var(--border-light);
-            border-radius: 10px;
-            background: var(--bg-secondary);
-            font-size: 14px;
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .search-box input:focus {
-            background: white;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(0,122,255,0.1);
-        }
-
-        .search-box input::placeholder {
-            color: var(--text-tertiary);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-tertiary);
-            font-size: 14px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0,122,255,0.25);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,122,255,0.35);
-        }
-
-        .btn-secondary {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-light);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-light);
-        }
-
-        .btn-icon {
-            padding: 10px;
-            border-radius: 10px;
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            font-size: 16px;
-        }
-
-        .btn-icon:hover {
-            background: var(--border-light);
-            color: var(--text-primary);
-        }
-
-        .view-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px;
-            position: relative;
-        }
-
-        .view-area::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .view-area::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .view-area::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        /* Empty State */
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 24px;
-        }
-
-        .empty-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 24px;
-            background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            margin-bottom: 20px;
-            color: var(--text-tertiary);
-        }
-
-        .empty-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .empty-desc {
-            font-size: 14px;
-            max-width: 400px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-
-        /* Bookshelf */
-        .bookshelf {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 24px;
-        }
-
-        .book-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            border: 1px solid var(--border-light);
-            position: relative;
-        }
-
-        .book-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .book-card.pinned::after {
-            content: '📌';
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            font-size: 14px;
-            z-index: 2;
-        }
-
-        .book-cover {
-            height: 140px;
-            background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .book-cover::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 100%);
-        }
-
-        .book-cover-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            text-align: center;
-            line-height: 1.4;
-            z-index: 1;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .book-cover-icon {
-            position: absolute;
-            bottom: 12px;
-            right: 12px;
-            font-size: 28px;
-            opacity: 0.2;
-        }
-
-        .book-info {
-            padding: 16px;
-        }
-
-        .book-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .book-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-tertiary);
-            margin-bottom: 10px;
-        }
-
-        .book-category {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 8px;
-            border-radius: 20px;
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .progress-bar {
-            height: 4px;
-            background: var(--bg-secondary);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #007aff, #5856d6);
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-
-        .progress-text {
-            font-size: 11px;
-            color: var(--text-tertiary);
-            margin-top: 6px;
-        }
-
-        .book-actions {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            display: flex;
-            gap: 4px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .book-card:hover .book-actions,
-        .book-actions:focus-within {
-            opacity: 1;
-        }
-
-        .book-action-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            color: var(--text-secondary);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            transition: all 0.15s;
-        }
-
-        .book-action-btn:hover {
-            background: white;
-            color: var(--accent);
-            transform: scale(1.08);
-        }
-
-        .book-action-btn.pinned {
-            color: var(--accent);
-        }
-
-        /* Reader */
-        .reader-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            z-index: 100;
-            flex-direction: column;
-        }
-
-        .reader-container.active {
-            display: flex;
-        }
-
-        .reader-header {
-            display: none;
-        }
-
-        .reader-close-float {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            z-index: 101;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.2s ease;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .reader-container.active .reader-close-float {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .reader-close-float:hover {
-            background: white;
-            color: var(--text-primary);
-            transform: scale(1.05);
-            box-shadow: var(--shadow-md);
-        }
-
-        .reader-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 40px 0;
-            background: white;
-        }
-
-        .reader-inner {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        .reader-content iframe {
-            width: 100%;
-            min-height: 100%;
-            border: none;
-        }
-
-        /* Import Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(4px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: white;
-            border-radius: var(--radius-xl);
-            width: 100%;
-            max-width: 520px;
-            max-height: 90vh;
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            animation: modalIn 0.3s ease;
-        }
-
-        @keyframes modalIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .modal-header {
-            padding: 24px 24px 0;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .modal-subtitle {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        .modal-footer {
-            padding: 16px 24px 24px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-lg);
-            padding: 40px 24px;
-            text-align: center;
-            transition: all 0.2s;
-            background: var(--bg-tertiary);
-        }
-
-        .drop-zone.drag-over {
-            border-color: var(--accent);
-            background: rgba(0,122,255,0.05);
-        }
-
-        .drop-zone-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-            color: var(--accent);
-        }
-
-        .drop-zone-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-
-        .drop-zone-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-
-        .file-list {
-            margin-top: 16px;
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .file-item-name {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .file-item-size {
-            color: var(--text-tertiary);
-            font-size: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-
-        .form-input, .form-select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 14px;
-            background: white;
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .form-input:focus, .form-select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(0,122,255,0.1);
-        }
-
-        .form-hint {
-            font-size: 12px;
-            color: var(--text-tertiary);
-            margin-top: 6px;
-            line-height: 1.5;
-        }
-
-        /* Settings */
-        .settings-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-light);
-            max-width: 680px;
-        }
-
-        .settings-card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .settings-card-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(29, 29, 31, 0.9);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 300;
-            opacity: 0;
-            transition: all 0.3s ease;
-            pointer-events: none;
-            max-width: 90vw;
-            text-align: center;
-        }
-
-        .toast.active {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success {
-            background: rgba(52, 199, 89, 0.9);
-        }
-
-        .toast.error {
-            background: rgba(255, 59, 48, 0.9);
-        }
-
-        .loading {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .spinner.dark {
-            border-color: var(--border);
-            border-top-color: var(--text-primary);
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Tablet */
-        @media (max-width: 1024px) {
-            .sidebar {
-                width: var(--sidebar-collapsed-width);
-                padding: 20px 12px;
-            }
-            .sidebar .brand-text,
-            .sidebar .brand-sub,
-            .sidebar .nav-title,
-            .sidebar .nav-item span:last-child,
-            .sidebar .add-category-btn span:last-child,
-            .sidebar .sidebar-footer span:last-child,
-            .sidebar .sidebar-toggle {
-                display: none;
-            }
-            .sidebar .nav-item,
-            .sidebar .add-category-btn {
-                justify-content: center;
-                padding: 10px;
-            }
-            .sidebar .nav-icon {
-                margin: 0;
-            }
-            .search-box {
-                width: 220px;
-            }
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: var(--sidebar-width);
-                transform: translateX(-100%);
-                box-shadow: var(--shadow-lg);
-                padding: 20px 16px;
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            .sidebar.open .brand-text,
-            .sidebar.open .brand-sub,
-            .sidebar.open .nav-title,
-            .sidebar.open .nav-item span:last-child,
-            .sidebar.open .add-category-btn span:last-child,
-            .sidebar.open .sidebar-footer span:last-child,
-            .sidebar.open .sidebar-toggle {
-                display: block;
-            }
-            .sidebar.open .brand-text,
-            .sidebar.open .brand-sub {
-                display: block;
-            }
-            .sidebar.open .nav-item,
-            .sidebar.open .add-category-btn {
-                justify-content: flex-start;
-                padding: 10px 12px;
-            }
-            .sidebar.open .nav-icon {
-                margin-right: 10px;
-            }
-
-            .mobile-menu-btn {
-                display: flex;
-            }
-
-            .top-bar {
-                height: auto;
-                min-height: 60px;
-                padding: 12px 16px;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-
-            .page-title {
-                font-size: 18px;
-            }
-
-            .top-actions {
-                width: 100%;
-                justify-content: flex-end;
-                order: 3;
-            }
-
-            .search-box {
-                width: 100%;
-                order: 2;
-            }
-
-            .search-box input {
-                padding: 10px 14px 10px 38px;
-            }
-
-            .btn-primary span:first-child {
-                display: inline;
-            }
-
-            .view-area {
-                padding: 16px;
-            }
-
-            .bookshelf {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
-            }
-
-            .book-cover {
-                height: 120px;
-            }
-
-            .book-info {
-                padding: 12px;
-            }
-
-            .book-title {
-                font-size: 13px;
-            }
-
-            .book-actions {
-                opacity: 1;
-            }
-
-            .reader-close-float {
-                top: 12px;
-                left: 12px;
-                width: 36px;
-                height: 36px;
-                font-size: 16px;
-            }
-
-            .reader-content {
-                padding: 24px 0;
-            }
-
-            .reader-inner {
-                padding: 0 16px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .bookshelf {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML Reader</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--text2:#86868b;--text3:#aeaeb2;
+  --blue:#007aff;--purple:#af52de;--green:#34c759;--red:#ff3b30;--orange:#ff9500;
+  --border:rgba(0,0,0,.08);--shadow:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 20px rgba(0,0,0,.08);--radius:14px;--radius-sm:10px;
+  --sidebar-w:260px;--topbar-h:56px;
+  --glass:rgba(255,255,255,.72);--glass-border:rgba(255,255,255,.5);
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:14px}
+input,select,textarea{font-family:inherit;font-size:14px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25)}
+
+/* === LAYOUT === */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:var(--sidebar-w);background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .3s ease}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* === SIDEBAR === */
+.sidebar-header{padding:20px 20px 12px;display:flex;align-items:center;gap:10px}
+.sidebar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#5856d6);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.sidebar-logo svg{width:18px;height:18px;fill:#fff}
+.sidebar-title{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.sidebar-section{padding:8px 12px}
+.sidebar-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;padding:8px 8px 4px;display:flex;align-items:center;justify-content:space-between}
+.sidebar-label button{color:var(--blue);font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px}
+.sidebar-label button:hover{background:rgba(0,122,255,.1)}
+.cat-list{list-style:none}
+.cat-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s ease;position:relative;font-size:14px;color:var(--text)}
+.cat-item:hover{background:rgba(0,0,0,.04)}
+.cat-item.active{background:rgba(0,122,255,.1);color:var(--blue);font-weight:500}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cat-count{margin-left:auto;font-size:12px;color:var(--text3);font-weight:500}
+.cat-delete{opacity:0;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s}
+.cat-item:hover .cat-delete{opacity:1}
+.cat-item:hover .cat-count{opacity:0}
+.cat-delete:hover{color:var(--red);background:rgba(255,59,48,.1)}
+.cat-delete svg{width:12px;height:12px}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);text-align:center}
+
+/* === TOPBAR === */
+.topbar{height:var(--topbar-h);padding:0 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+.search-box{flex:1;max-width:400px;position:relative}
+.search-box input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(0,0,0,.03);outline:none;transition:all .2s}
+.search-box input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.search-box svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text3);pointer-events:none}
+.topbar-actions{display:flex;gap:8px;margin-left:auto}
+.btn{height:36px;padding:0 16px;border-radius:var(--radius-sm);font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#0066d6}
+.btn-ghost{color:var(--text)}
+.btn-ghost:hover{background:rgba(0,0,0,.04)}
+.btn svg{width:16px;height:16px}
+.view-toggle{display:flex;background:rgba(0,0,0,.04);border-radius:8px;padding:2px}
+.view-toggle button{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s}
+.view-toggle button.active{background:#fff;color:var(--text);box-shadow:var(--shadow)}
+.view-toggle svg{width:16px;height:16px}
+
+/* === CONTENT === */
+.content{flex:1;overflow-y:auto;padding:24px}
+.content-header{margin-bottom:20px}
+.content-title{font-size:22px;font-weight:600;letter-spacing:-.3px}
+.content-sub{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* === GRID VIEW === */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.book-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:all .2s ease;position:relative;cursor:pointer}
+.book-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:rgba(0,0,0,.1)}
+.book-card.pinned{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.book-preview{height:140px;background:#fafafa;overflow:hidden;position:relative;border-bottom:1px solid var(--border)}
+.book-preview iframe{width:200%;height:400%;transform:scale(.5);transform-origin:top left;border:none;pointer-events:none}
+.book-preview-overlay{position:absolute;inset:0;background:transparent}
+.book-pin-badge{position:absolute;top:8px;left:8px;width:24px;height:24px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.book-pin-badge svg{width:12px;height:12px;fill:#fff}
+.book-info{padding:14px}
+.book-title{font-size:14px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;letter-spacing:-.1px}
+.book-meta{display:flex;align-items:center;gap:8px;margin-top:8px}
+.book-category{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.book-date{font-size:11px;color:var(--text3);margin-left:auto}
+.book-progress-bar{height:3px;background:rgba(0,0,0,.06);border-radius:2px;margin-top:10px;overflow:hidden}
+.book-progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .3s}
+.book-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.book-card:hover .book-actions{opacity:1}
+.book-action-btn{width:28px;height:28px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);transition:all .15s}
+.book-action-btn:hover{background:#fff;box-shadow:var(--shadow)}
+.book-action-btn svg{width:14px;height:14px;color:var(--text2)}
+.book-action-btn.pin-active{color:var(--blue)}
+.book-action-btn.pin-active svg{fill:var(--blue)}
+
+/* === LIST VIEW === */
+.list .book-card{display:flex;border-radius:var(--radius-sm);cursor:pointer}
+.list .book-preview{width:80px;height:60px;flex-shrink:0;border-radius:var(--radius-sm) 0 0 var(--radius-sm);border-bottom:none;border-right:1px solid var(--border)}
+.list .book-preview iframe{transform:scale(.176)}
+.list .book-info{flex:1;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.list .book-title{-webkit-line-clamp:1;flex:1;min-width:0}
+.list .book-meta{margin-top:0;flex-shrink:0}
+.list .book-progress-bar{display:none}
+.list .book-actions{position:static;opacity:0}
+.list .book-card:hover .book-actions{opacity:1}
+
+/* === EMPTY STATE === */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{width:64px;height:64px;background:rgba(0,0,0,.04);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.empty-icon svg{width:28px;height:28px;color:var(--text3)}
+.empty-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
+.empty-desc{font-size:13px;text-align:center;max-width:300px;line-height:1.5}
+
+/* === READER VIEW === */
+.reader-view{position:fixed;inset:0;z-index:1000;background:#fff;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.reader-view.active{opacity:1;pointer-events:all}
+.reader-topbar{height:48px;background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0}
+.reader-back{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--blue);transition:background .15s}
+.reader-back:hover{background:rgba(0,122,255,.08)}
+.reader-back svg{width:20px;height:20px}
+.reader-book-title{font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reader-progress-text{font-size:12px;color:var(--text2);font-weight:500;flex-shrink:0}
+.reader-content{flex:1;position:relative;overflow:hidden}
+.reader-content iframe{width:100%;height:100%;border:none}
+.reader-progress-bar{height:3px;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.06);z-index:10}
+.reader-progress-fill{height:100%;background:var(--blue);transition:width .15s}
+
+/* === MODAL === */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.active{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);width:440px;max-width:90vw;max-height:80vh;overflow:auto;transform:scale(.95);transition:transform .2s}
+.modal-overlay.active .modal{transform:scale(1)}
+.modal-header{padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s}
+.modal-close:hover{background:rgba(0,0,0,.06);color:var(--text)}
+.modal-close svg{width:16px;height:16px}
+.modal-body{padding:0 24px 24px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.form-input{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:all .2s}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.form-select{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:all .2s}
+.form-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:8px}
+.btn-cancel{height:36px;padding:0 16px;border-radius:var(--radius-sm);font-weight:500;color:var(--text)}
+.btn-cancel:hover{background:rgba(0,0,0,.04)}
+
+/* === DROP ZONE === */
+.drop-zone{position:fixed;inset:0;z-index:1500;background:rgba(0,122,255,.08);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.drop-zone.active{opacity:1;pointer-events:all}
+.drop-zone-inner{border:3px dashed var(--blue);border-radius:24px;padding:60px 80px;text-align:center;background:rgba(255,255,255,.9)}
+.drop-zone-icon{width:56px;height:56px;background:rgba(0,122,255,.1);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.drop-zone-icon svg{width:28px;height:28px;color:var(--blue)}
+.drop-zone-title{font-size:18px;font-weight:600;margin-bottom:4px}
+.drop-zone-desc{font-size:13px;color:var(--text2)}
+
+/* === TOAST === */
+.toast-container{position:fixed;top:20px;right:20px;z-index:3000;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateX(120%);transition:transform .3s ease;max-width:320px}
+.toast.show{transform:translateX(0)}
+.toast.success{background:#1d1d1f}
+.toast.error{background:var(--red)}
+
+/* === IMPORT PROGRESS === */
+.import-progress{margin-top:12px}
+.import-bar{height:4px;background:rgba(0,0,0,.06);border-radius:2px;overflow:hidden}
+.import-bar-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .3s;width:0}
+.import-status{font-size:12px;color:var(--text2);margin-top:6px}
+
+/* === CONTEXT MENU === */
+.context-menu{position:fixed;z-index:2500;background:#fff;border-radius:var(--radius-sm);box-shadow:0 8px 30px rgba(0,0,0,.12);border:1px solid var(--border);padding:4px;min-width:180px;opacity:0;pointer-events:none;transform:scale(.95);transition:all .15s}
+.context-menu.active{opacity:1;pointer-events:all;transform:scale(1)}
+.ctx-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:13px;cursor:pointer;transition:background .1s}
+.ctx-item:hover{background:rgba(0,0,0,.04)}
+.ctx-item svg{width:16px;height:16px;color:var(--text2)}
+.ctx-item.danger{color:var(--red)}
+.ctx-item.danger svg{color:var(--red)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* === LOADING === */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px}
+.spinner{width:24px;height:24px;border:2.5px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* === RESPONSIVE === */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .menu-btn{display:flex!important}
+}
+.menu-btn{display:none;width:36px;height:36px;border-radius:8px;align-items:center;justify-content:center}
+.menu-btn:hover{background:rgba(0,0,0,.04)}
+.menu-btn svg{width:20px;height:20px}
+</style>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar" id="sidebar">
-            <div class="brand">
-                <div class="brand-left">
-                    <div class="brand-icon">H</div>
-                    <div>
-                        <div class="brand-text">HTML Reader</div>
-                        <div class="brand-sub">Elegant Reader</div>
-                    </div>
-                </div>
-                <button class="sidebar-toggle" id="sidebarToggle" title="收起/展开">◀</button>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-title">Library</div>
-                <div class="nav-item active" data-view="shelf" data-filter="all">
-                    <span class="nav-icon">📚</span>
-                    <span>全部书籍</span>
-                </div>
-                <div class="nav-item" data-view="shelf" data-filter="recent">
-                    <span class="nav-icon">🕐</span>
-                    <span>最近阅读</span>
-                </div>
-                <div class="nav-item" data-view="shelf" data-filter="unread">
-                    <span class="nav-icon">📖</span>
-                    <span>未读</span>
-                </div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-title">Categories</div>
-                <div class="category-list" id="categoryList"></div>
-                <div class="add-category-btn" id="addCategoryBtn">
-                    <span>+</span>
-                    <span>新建分类</span>
-                </div>
-            </div>
-
-            <div class="sidebar-footer">
-                <div class="nav-item" data-view="settings">
-                    <span class="nav-icon">⚙️</span>
-                    <span>同步设置</span>
-                </div>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <header class="top-bar">
-                <div class="top-bar-left">
-                    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-                    <h1 class="page-title" id="pageTitle">全部书籍</h1>
-                </div>
-                <div class="top-actions">
-                    <div class="search-box">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" placeholder="搜索书名、分类...">
-                    </div>
-                    <button class="btn btn-primary" id="importBtn">
-                        <span>+</span>
-                        <span>导入 HTML</span>
-                    </button>
-                </div>
-            </header>
-
-            <div class="view-area" id="viewArea">
-                <!-- Dynamic content will be inserted here -->
-            </div>
-        </main>
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="sidebar-title">HTML Reader</span>
     </div>
+    <div class="sidebar-section" style="flex:1;overflow-y:auto">
+      <div class="sidebar-label">
+        <span>分类</span>
+        <button onclick="showAddCategory()" title="新建分类">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <ul class="cat-list" id="catList"></ul>
+    </div>
+    <div class="sidebar-footer">
+      <button onclick="showSettings()" style="color:var(--text2);font-size:12px;display:flex;align-items:center;gap:4px;margin:0 auto 6px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置
+      </button>
+      <div>HTML Reader v1.0</div>
+    </div>
+  </aside>
 
-    <!-- Reader -->
-    <div class="reader-container" id="readerContainer">
-        <button class="reader-close-float" id="closeReader" title="关闭">✕</button>
-        <div class="reader-content" id="readerContent">
-            <div class="reader-inner" id="readerInner"></div>
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="搜索文档..." oninput="onSearch()">
+      </div>
+      <div class="topbar-actions">
+        <div class="view-toggle">
+          <button id="gridViewBtn" class="active" onclick="setView('grid')" title="网格">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button id="listViewBtn" onclick="setView('list')" title="列表">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
         </div>
+        <button class="btn btn-primary" onclick="showImport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          导入
+        </button>
+      </div>
     </div>
+    <div class="content" id="content">
+      <div class="content-header" id="contentHeader"></div>
+      <div id="bookGrid" class="grid"></div>
+    </div>
+  </div>
+</div>
 
-    <!-- Import Modal -->
-    <div class="modal-overlay" id="importModal">
-        <div class="modal">
-            <div class="modal-header">
-                <div class="modal-title">导入 HTML</div>
-                <div class="modal-subtitle">支持拖拽或点击上传 .html 文件</div>
-            </div>
-            <div class="modal-body">
-                <div class="drop-zone" id="dropZone">
-                    <div class="drop-zone-icon">📄</div>
-                    <div class="drop-zone-title">拖拽 HTML 文件到此处</div>
-                    <div class="drop-zone-desc">或点击选择文件</div>
-                    <button class="btn btn-secondary" id="selectFilesBtn">选择文件</button>
-                    <input type="file" id="fileInput" class="hidden" accept=".html,.htm" multiple>
-                </div>
-                <div class="form-group" style="margin-top: 16px;">
-                    <label class="form-label">默认分类</label>
-                    <select class="form-select" id="importCategory">
-                        <option value="">未分类</option>
-                    </select>
-                </div>
-                <div class="file-list" id="fileList"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelImport">取消</button>
-                <button class="btn btn-primary" id="confirmImport">导入</button>
-            </div>
+<!-- Reader View -->
+<div class="reader-view" id="readerView">
+  <div class="reader-topbar">
+    <button class="reader-back" onclick="closeReader()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="reader-book-title" id="readerTitle"></span>
+    <span class="reader-progress-text" id="readerProgressText">0%</span>
+    <button class="btn btn-ghost" onclick="downloadCurrent()" title="下载">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+  </div>
+  <div class="reader-content">
+    <iframe id="readerFrame" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
+    <div class="reader-progress-bar"><div class="reader-progress-fill" id="readerProgressFill"></div></div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">导入 HTML</span>
+      <button class="modal-close" onclick="hideImport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">选择文件</label>
+        <div id="fileDropArea" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:30px;text-align:center;cursor:pointer;transition:all .2s" onclick="document.getElementById('fileInput').click()">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="font-size:13px;color:var(--text2)" id="fileLabel">点击选择或拖放 HTML 文件</div>
+          <input type="file" id="fileInput" accept=".html,.htm" multiple style="display:none" onchange="onFileSelect(this.files)">
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">标题</label>
+        <input type="text" class="form-input" id="importTitle" placeholder="自动从文件名提取">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类</label>
+        <select class="form-select" id="importCategory"></select>
+      </div>
+      <div class="import-progress" id="importProgress" style="display:none">
+        <div class="import-bar"><div class="import-bar-fill" id="importBarFill"></div></div>
+        <div class="import-status" id="importStatus">准备中...</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideImport()">取消</button>
+        <button class="btn btn-primary" id="importBtn" onclick="doImport()">导入</button>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Category Modal -->
-    <div class="modal-overlay" id="categoryModal">
-        <div class="modal" style="max-width: 400px;">
-            <div class="modal-header">
-                <div class="modal-title" id="categoryModalTitle">新建分类</div>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">分类名称</label>
-                    <input type="text" class="form-input" id="categoryNameInput" placeholder="例如：技术文档">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelCategory">取消</button>
-                <button class="btn btn-primary" id="confirmCategory">保存</button>
-            </div>
+<!-- Add Category Modal -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title">新建分类</span>
+      <button class="modal-close" onclick="hideCatModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">分类名称</label>
+        <input type="text" class="form-input" id="catName" placeholder="例如：技术文档">
+      </div>
+      <div class="form-group">
+        <label class="form-label">颜色</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorPicker"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideCatModal()">取消</button>
+        <button class="btn btn-primary" onclick="addCategory()">创建</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drop Zone -->
+<div class="drop-zone" id="dropZone">
+  <div class="drop-zone-inner">
+    <div class="drop-zone-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="drop-zone-title">释放以导入文件</div>
+    <div class="drop-zone-desc">支持 .html 和 .htm 文件</div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="ctxMenu"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <span class="modal-title">设置</span>
+      <button class="modal-close" onclick="hideSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(0,122,255,.06);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.5">
+        <div style="font-weight:600;color:var(--text);margin-bottom:4px">🔗 连接 GitHub 仓库</div>
+        需要一个 GitHub Personal Access Token (PAT) 来读写仓库 <code style="background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-size:12px">${GH_USER}/${GH_REPO}</code>。
+        <br>Token 仅存储在你的浏览器本地，不会上传到任何地方。
+      </div>
+      <div class="form-group">
+        <label class="form-label">GitHub Token</label>
+        <input type="password" class="form-input" id="settingsToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace">
+      </div>
+      <div id="settingsStatus" style="font-size:12px;margin-top:-8px;margin-bottom:12px;min-height:18px"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="testToken()" style="margin-right:auto">测试连接</button>
+        <button class="btn-cancel" onclick="hideSettings()">取消</button>
+        <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== CONFIG =====
+const GH_USER = 'AHH20250507';
+const GH_REPO = 'html-reader';
+const GH_API = `https://api.github.com/repos/${GH_USER}/${GH_REPO}`;
+const META_PATH = 'reader-metadata.json';
+const BOOKS_DIR = 'books';
+const RAW_BASE = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main`;
+
+function getGH() {
+  const t = localStorage.getItem('hr_gh_token');
+  return t ? { token: t, api: GH_API, rawBase: RAW_BASE } : null;
+}
+
+function setGH(token) {
+  localStorage.setItem('hr_gh_token', token);
+}
+
+function getGHToken() {
+  return localStorage.getItem('hr_gh_token') || '';
+}
+
+// ===== STATE =====
+let state = {
+  categories: [{id:'uncategorized',name:'未分类',color:'#86868b'}],
+  books: [],
+  currentCat: 'all',
+  viewMode: 'grid',
+  searchQuery: '',
+  currentBook: null
+};
+
+let pendingFiles = [];
+let selectedColor = '#007aff';
+
+// ===== GITHUB API =====
+async function ghFetch(path, opts = {}) {
+  const token = getGHToken();
+  if (!token) { showSettings(); throw new Error('No token'); }
+  const url = path.startsWith('http') ? path : `${GH_API}/contents/${path}`;
+  const res = await fetch(url, {
+    ...opts,
+    headers: {
+      'Authorization': `token ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      ...(opts.headers || {})
+    }
+  });
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  return res.json();
+}
+
+async function getFile(path) {
+  try {
+    const data = await ghFetch(path);
+    return { content: atob(data.content.replace(/\n/g, '')), sha: data.sha };
+  } catch (e) {
+    if (e.message.includes('404')) return null;
+    throw e;
+  }
+}
+
+async function putFile(path, content, sha = null, message = 'Update') {
+  const token = getGHToken();
+  if (!token) { showSettings(); throw new Error('No token'); }
+  const body = { message, content: btoa(unescape(encodeURIComponent(content))), branch: 'main' };
+  if (sha) body.sha = sha;
+  const url = `${GH_API}/contents/${path}`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Put file failed: ${res.status}`);
+  return res.json();
+}
+
+async function deleteFile(path, sha, message = 'Delete') {
+  const token = getGHToken();
+  if (!token) { showSettings(); throw new Error('No token'); }
+  const url = `${GH_API}/contents/${path}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ message, sha, branch: 'main' })
+  });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+  return res.json();
+}
+
+// ===== METADATA =====
+let metaSha = null;
+
+async function loadMetadata() {
+  try {
+    const file = await getFile(META_PATH);
+    if (file) {
+      const data = JSON.parse(file.content);
+      metaSha = file.sha;
+      state.categories = data.categories || state.categories;
+      state.books = data.books || [];
+    }
+  } catch (e) {
+    console.error('Load metadata failed:', e);
+  }
+}
+
+async function saveMetadata() {
+  try {
+    const data = {
+      version: 1,
+      updatedAt: Date.now(),
+      categories: state.categories,
+      books: state.books
+    };
+    const res = await putFile(META_PATH, JSON.stringify(data, null, 2), metaSha, 'Update metadata');
+    metaSha = res.content.sha;
+  } catch (e) {
+    console.error('Save metadata failed:', e);
+  }
+}
+
+// ===== RENDERING =====
+function renderCategories() {
+  const list = document.getElementById('catList');
+  const allCount = state.books.length;
+  let html = `
+    <li class="cat-item ${state.currentCat === 'all' ? 'active' : ''}" onclick="selectCategory('all')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>全部</span>
+      <span class="cat-count">${allCount}</span>
+    </li>
+    <li class="cat-item ${state.currentCat === 'pinned' ? 'active' : ''}" onclick="selectCategory('pinned')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+      <span>已置顶</span>
+      <span class="cat-count">${state.books.filter(b=>b.pinned).length}</span>
+    </li>`;
+  state.categories.forEach(cat => {
+    const count = state.books.filter(b => b.category === cat.id).length;
+    const canDelete = cat.id !== 'uncategorized';
+    html += `
+    <li class="cat-item ${state.currentCat === cat.id ? 'active' : ''}" onclick="selectCategory('${cat.id}')">
+      <span class="cat-dot" style="background:${cat.color}"></span>
+      <span>${escHtml(cat.name)}</span>
+      <span class="cat-count">${count}</span>
+      ${canDelete ? `<button class="cat-delete" onclick="event.stopPropagation();deleteCategory('${cat.id}')" title="删除分类">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>` : ''}
+    </li>`;
+  });
+  list.innerHTML = html;
+}
+
+function getFilteredBooks() {
+  let books = [...state.books];
+  if (state.currentCat === 'pinned') {
+    books = books.filter(b => b.pinned);
+  } else if (state.currentCat !== 'all') {
+    books = books.filter(b => b.category === state.currentCat);
+  }
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    books = books.filter(b => b.title.toLowerCase().includes(q));
+  }
+  // Sort: pinned first, then by lastRead
+  books.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (b.lastRead || 0) - (a.lastRead || 0);
+  });
+  return books;
+}
+
+function renderBooks() {
+  const grid = document.getElementById('bookGrid');
+  const books = getFilteredBooks();
+  const header = document.getElementById('contentHeader');
+
+  let title = '全部文档';
+  if (state.currentCat === 'pinned') title = '已置顶';
+  else if (state.currentCat !== 'all') {
+    const cat = state.categories.find(c => c.id === state.currentCat);
+    title = cat ? cat.name : '文档';
+  }
+  if (state.searchQuery) title = `搜索"${state.searchQuery}"`;
+  header.innerHTML = `<div class="content-title">${title}</div><div class="content-sub">${books.length} 个文档</div>`;
+
+  if (books.length === 0) {
+    grid.innerHTML = `
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="empty-title">${state.searchQuery ? '没有找到匹配的文档' : '还没有文档'}</div>
+      <div class="empty-desc">${state.searchQuery ? '试试其他关键词' : '点击右上角的「导入」按钮添加 HTML 文件'}</div>
+    </div>`;
+    return;
+  }
+
+  grid.className = state.viewMode === 'list' ? 'list' : 'grid';
+  grid.innerHTML = books.map(book => {
+    const cat = state.categories.find(c => c.id === book.category);
+    const catColor = cat ? cat.color : '#86868b';
+    const catName = cat ? cat.name : '未分类';
+    const progress = getProgress(book.id);
+    const rawUrl = `${RAW_BASE}/${BOOKS_DIR}/${encodeURIComponent(book.filename)}`;
+    return `
+    <div class="book-card ${book.pinned ? 'pinned' : ''}" onclick="openReader('${book.id}')" oncontextmenu="showCtx(event,'${book.id}')">
+      <div class="book-preview">
+        <iframe src="${rawUrl}" loading="lazy" tabindex="-1"></iframe>
+        <div class="book-preview-overlay"></div>
+        ${book.pinned ? '<div class="book-pin-badge"><svg viewBox="0 0 24 24"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></div>' : ''}
+      </div>
+      <div class="book-info">
+        <div class="book-title">${escHtml(book.title)}</div>
+        <div class="book-meta">
+          <span class="book-category" style="background:${catColor}15;color:${catColor}">${escHtml(catName)}</span>
+          <span class="book-date">${formatDate(book.importDate)}</span>
         </div>
+        ${progress > 0 ? `<div class="book-progress-bar"><div class="book-progress-fill" style="width:${progress}%"></div></div>` : ''}
+      </div>
+      <div class="book-actions">
+        <button class="book-action-btn ${book.pinned ? 'pin-active' : ''}" onclick="event.stopPropagation();togglePin('${book.id}')" title="${book.pinned ? '取消置顶' : '置顶'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+        </button>
+        <button class="book-action-btn" onclick="event.stopPropagation();downloadBook('${book.id}')" title="下载">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="book-action-btn" onclick="event.stopPropagation();deleteBook('${book.id}')" title="删除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== CATEGORIES =====
+function selectCategory(id) {
+  state.currentCat = id;
+  renderCategories();
+  renderBooks();
+}
+
+function showAddCategory() {
+  document.getElementById('catModal').classList.add('active');
+  document.getElementById('catName').value = '';
+  renderColorPicker();
+}
+
+function hideCatModal() {
+  document.getElementById('catModal').classList.remove('active');
+}
+
+const CAT_COLORS = ['#007aff','#5856d6','#af52de','#ff2d55','#ff3b30','#ff9500','#ffcc00','#34c759','#00c7be','#30b0c7','#8e8e93'];
+
+function renderColorPicker() {
+  const el = document.getElementById('colorPicker');
+  el.innerHTML = CAT_COLORS.map(c =>
+    `<button style="width:28px;height:28px;border-radius:50%;background:${c};border:2px solid ${c===selectedColor?'var(--text)':'transparent'};transition:all .15s" onclick="pickColor('${c}')"></button>`
+  ).join('');
+}
+
+function pickColor(c) {
+  selectedColor = c;
+  renderColorPicker();
+}
+
+function addCategory() {
+  const name = document.getElementById('catName').value.trim();
+  if (!name) return toast('请输入分类名称', 'error');
+  const id = 'cat_' + Date.now();
+  state.categories.push({ id, name, color: selectedColor });
+  saveMetadata();
+  renderCategories();
+  hideCatModal();
+  toast('分类已创建');
+}
+
+function deleteCategory(id) {
+  const booksInCat = state.books.filter(b => b.category === id);
+  if (booksInCat.length > 0) {
+    if (!confirm(`该分类下有 ${booksInCat.length} 个文档，删除后这些文档将移至「未分类」。确定删除？`)) return;
+    booksInCat.forEach(b => b.category = 'uncategorized');
+  }
+  state.categories = state.categories.filter(c => c.id !== id);
+  if (state.currentCat === id) state.currentCat = 'all';
+  saveMetadata();
+  renderCategories();
+  renderBooks();
+  toast('分类已删除');
+}
+
+// ===== IMPORT =====
+function showImport() {
+  document.getElementById('importModal').classList.add('active');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileLabel').textContent = '点击选择或拖放 HTML 文件';
+  document.getElementById('importTitle').value = '';
+  document.getElementById('importProgress').style.display = 'none';
+  pendingFiles = [];
+  renderImportCategorySelect();
+}
+
+function hideImport() {
+  document.getElementById('importModal').classList.remove('active');
+}
+
+function renderImportCategorySelect() {
+  const sel = document.getElementById('importCategory');
+  sel.innerHTML = state.categories.map(c =>
+    `<option value="${c.id}">${c.name}</option>`
+  ).join('');
+}
+
+function onFileSelect(files) {
+  pendingFiles = Array.from(files).filter(f => f.name.endsWith('.html') || f.name.endsWith('.htm'));
+  if (pendingFiles.length === 0) return toast('请选择 HTML 文件', 'error');
+  document.getElementById('fileLabel').textContent = pendingFiles.map(f => f.name).join(', ');
+  if (pendingFiles.length === 1) {
+    document.getElementById('importTitle').value = pendingFiles[0].name.replace(/\.html?$/i, '');
+  }
+}
+
+async function doImport() {
+  if (pendingFiles.length === 0) return toast('请先选择文件', 'error');
+  const category = document.getElementById('importCategory').value;
+  const customTitle = document.getElementById('importTitle').value.trim();
+  const progressEl = document.getElementById('importProgress');
+  const barFill = document.getElementById('importBarFill');
+  const statusEl = document.getElementById('importStatus');
+
+  progressEl.style.display = 'block';
+  document.getElementById('importBtn').disabled = true;
+
+  for (let i = 0; i < pendingFiles.length; i++) {
+    const file = pendingFiles[i];
+    const pct = Math.round((i / pendingFiles.length) * 100);
+    barFill.style.width = pct + '%';
+    statusEl.textContent = `正在导入 ${file.name} (${i+1}/${pendingFiles.length})...`;
+
+    try {
+      const content = await readFile(file);
+      const id = 'book_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      const title = pendingFiles.length === 1 && customTitle ? customTitle : file.name.replace(/\.html?$/i, '');
+      const filename = `${id}.html`;
+
+      await putFile(`${BOOKS_DIR}/${filename}`, content, null, `Import ${title}`);
+
+      state.books.push({
+        id,
+        title,
+        filename,
+        category,
+        pinned: false,
+        importDate: Date.now(),
+        lastRead: 0
+      });
+    } catch (e) {
+      console.error('Import failed:', e);
+      toast(`导入 ${file.name} 失败: ${e.message}`, 'error');
+    }
+  }
+
+  barFill.style.width = '100%';
+  statusEl.textContent = '导入完成！';
+
+  await saveMetadata();
+  renderCategories();
+  renderBooks();
+
+  setTimeout(() => {
+    hideImport();
+    toast(`成功导入 ${pendingFiles.length} 个文件`);
+  }, 500);
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+// ===== READER =====
+function openReader(bookId) {
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+
+  state.currentBook = book;
+  book.lastRead = Date.now();
+  saveMetadata();
+
+  const rawUrl = `${RAW_BASE}/${BOOKS_DIR}/${encodeURIComponent(book.filename)}`;
+  document.getElementById('readerTitle').textContent = book.title;
+
+  const frame = document.getElementById('readerFrame');
+  frame.src = rawUrl;
+
+  document.getElementById('readerView').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Restore progress after load
+  frame.onload = () => {
+    try {
+      const progress = getProgress(bookId);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const maxScroll = doc.documentElement.scrollHeight - doc.documentElement.clientHeight;
+      if (maxScroll > 0 && progress > 0) {
+        doc.documentElement.scrollTop = (progress / 100) * maxScroll;
+      }
+      // Inject scroll listener
+      const script = doc.createElement('script');
+      script.textContent = `
+        (function() {
+          let ticking = false;
+          function onScroll() {
+            if (!ticking) {
+              requestAnimationFrame(function() {
+                const el = document.documentElement;
+                const max = el.scrollHeight - el.clientHeight;
+                const pct = max > 0 ? Math.round((el.scrollTop / max) * 100) : 0;
+                window.parent.postMessage({type:'reader-progress', progress: pct}, '*');
+                ticking = false;
+              });
+              ticking = true;
+            }
+          }
+          window.addEventListener('scroll', onScroll, {passive: true});
+        })();
+      `;
+      doc.head.appendChild(script);
+    } catch (e) {
+      console.log('Cannot inject scroll listener (cross-origin):', e);
+    }
+  };
+
+  updateReaderProgress(getProgress(bookId));
+}
+
+function closeReader() {
+  document.getElementById('readerView').classList.remove('active');
+  document.body.style.overflow = '';
+  document.getElementById('readerFrame').src = 'about:blank';
+  state.currentBook = null;
+  renderBooks(); // Update progress display
+}
+
+function updateReaderProgress(pct) {
+  document.getElementById('readerProgressText').textContent = pct + '%';
+  document.getElementById('readerProgressFill').style.width = pct + '%';
+}
+
+// Listen for progress messages from iframe
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'reader-progress' && state.currentBook) {
+    const pct = e.data.progress;
+    setProgress(state.currentBook.id, pct);
+    updateReaderProgress(pct);
+  }
+});
+
+// ===== PROGRESS (localStorage) =====
+function getProgress(bookId) {
+  try {
+    const data = JSON.parse(localStorage.getItem('hr_progress') || '{}');
+    return data[bookId] || 0;
+  } catch { return 0; }
+}
+
+function setProgress(bookId, pct) {
+  try {
+    const data = JSON.parse(localStorage.getItem('hr_progress') || '{}');
+    data[bookId] = pct;
+    localStorage.setItem('hr_progress', JSON.stringify(data));
+  } catch {}
+}
+
+// ===== BOOK ACTIONS =====
+function togglePin(bookId) {
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+  book.pinned = !book.pinned;
+  saveMetadata();
+  renderBooks();
+  renderCategories();
+  toast(book.pinned ? '已置顶' : '已取消置顶');
+}
+
+function downloadBook(bookId) {
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+  const rawUrl = `${RAW_BASE}/${BOOKS_DIR}/${encodeURIComponent(book.filename)}`;
+  const a = document.createElement('a');
+  a.href = rawUrl;
+  a.download = book.title + '.html';
+  a.click();
+}
+
+function downloadCurrent() {
+  if (state.currentBook) downloadBook(state.currentBook.id);
+}
+
+async function deleteBook(bookId) {
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+  if (!confirm(`确定删除「${book.title}」？此操作不可撤销。`)) return;
+
+  try {
+    const file = await getFile(`${BOOKS_DIR}/${book.filename}`);
+    if (file) {
+      await deleteFile(`${BOOKS_DIR}/${book.filename}`, file.sha, `Delete ${book.title}`);
+    }
+    state.books = state.books.filter(b => b.id !== bookId);
+    await saveMetadata();
+    renderCategories();
+    renderBooks();
+    toast('已删除');
+  } catch (e) {
+    toast('删除失败: ' + e.message, 'error');
+  }
+}
+
+// ===== CONTEXT MENU =====
+function showCtx(e, bookId) {
+  e.preventDefault();
+  e.stopPropagation();
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+
+  const menu = document.getElementById('ctxMenu');
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="openReader('${bookId}');hideCtx()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      打开阅读
     </div>
-
-    <!-- Settings View -->
-    <div class="modal-overlay" id="settingsModal" style="align-items: flex-start; padding-top: 60px;">
-        <div class="modal" style="max-width: 640px;">
-            <div class="modal-header">
-                <div class="modal-title">同步设置</div>
-                <div class="modal-subtitle">配置 GitHub Token 后，导入、删除书籍和阅读进度会自动同步到仓库。</div>
-            </div>
-            <div class="modal-body">
-                <div class="settings-card">
-                    <div class="settings-card-title">GitHub Token</div>
-                    <div class="settings-card-desc">Token 仅保存在当前浏览器中，用于自动同步书籍和阅读进度。</div>
-                    <div class="form-group">
-                        <label class="form-label">Personal Access Token</label>
-                        <input type="password" class="form-input" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxx">
-                        <div class="form-hint">需要 <code>repo</code> 权限。可在 GitHub Settings → Developer settings → Personal access tokens 中生成。</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelSettings">取消</button>
-                <button class="btn btn-primary" id="saveSettings">保存设置</button>
-            </div>
-        </div>
+    <div class="ctx-item" onclick="togglePin('${bookId}');hideCtx()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+      ${book.pinned ? '取消置顶' : '置顶'}
     </div>
-
-    <div class="toast" id="toast"></div>
-
-    <script>
-        // Application State
-        const state = {
-            books: [],
-            categories: [
-                { id: 'uncategorized', name: '未分类', color: '#86868b' },
-                { id: 'tech', name: '技术文档', color: '#007aff' },
-                { id: 'novel', name: '小说', color: '#af52de' },
-                { id: 'article', name: '文章', color: '#34c759' }
-            ],
-            currentFilter: 'all',
-            currentCategory: null,
-            searchQuery: '',
-            settings: {
-                githubToken: ''
-            },
-            repo: {
-                owner: 'AHH20250507',
-                name: 'html-reader',
-                branch: 'main'
-            },
-            pendingFiles: []
-        };
-
-        // IndexedDB Setup with localStorage fallback
-        const DB_NAME = 'HTMLReaderDB';
-        const DB_VERSION = 2;
-        let db = null;
-        let useFallback = false;
-        const fallbackData = {
-            books: {},
-            categories: {},
-            settings: {},
-            uiState: {}
-        };
-
-        function getStoreKeyField(store) {
-            return (store === 'settings' || store === 'uiState') ? 'key' : 'id';
-        }
-
-        function getStoreKey(store, value) {
-            const field = getStoreKeyField(store);
-            return value[field];
-        }
-
-        const FALLBACK_VERSION = 1;
-
-        function initFallback() {
-            useFallback = true;
-            try {
-                const saved = localStorage.getItem('htmlReaderFallback');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    // If version mismatch or missing, clear stale data
-                    if (parsed._version !== FALLBACK_VERSION) {
-                        console.warn('Fallback version mismatch, clearing old data');
-                        localStorage.removeItem('htmlReaderFallback');
-                        return;
-                    }
-                    Object.keys(fallbackData).forEach(k => {
-                        if (parsed[k]) fallbackData[k] = parsed[k];
-                    });
-                }
-            } catch (e) {
-                console.error('Fallback load error:', e);
-                localStorage.removeItem('htmlReaderFallback');
-            }
-        }
-
-        function saveFallback() {
-            if (!useFallback) return;
-            try {
-                const toSave = { ...fallbackData, _version: FALLBACK_VERSION };
-                localStorage.setItem('htmlReaderFallback', JSON.stringify(toSave));
-            } catch (e) {
-                console.error('Fallback save error:', e);
-                if (e.name === 'QuotaExceededError') {
-                    showToast('本地存储空间不足，无法保存更多书籍', 'error');
-                }
-            }
-        }
-
-        // Detect garbled text (UTF-8 bytes decoded as Latin1, common for Chinese mojibake)
-        function isGarbledText(text) {
-            if (!text) return false;
-            // Mojibake Chinese typically shows as sequences of Latin-1 Supplement / Extended-A chars
-            // e.g. "æªåç±»" for "未分类"
-            const garbledPattern = /[\u00C0-\u017F]{2,}/;
-            return garbledPattern.test(text);
-        }
-
-        function initDB() {
-            return new Promise((resolve) => {
-                if (!window.indexedDB) {
-                    console.warn('IndexedDB not available, using localStorage fallback');
-                    initFallback();
-                    resolve(null);
-                    return;
-                }
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = () => {
-                    console.error('IndexedDB error:', request.error);
-                    initFallback();
-                    resolve(null);
-                };
-                request.onsuccess = () => {
-                    db = request.result;
-                    resolve(db);
-                };
-                request.onupgradeneeded = (event) => {
-                    const database = event.target.result;
-                    if (!database.objectStoreNames.contains('books')) {
-                        const bookStore = database.createObjectStore('books', { keyPath: 'id' });
-                        bookStore.createIndex('category', 'categoryId', { unique: false });
-                        bookStore.createIndex('updatedAt', 'updatedAt', { unique: false });
-                    }
-                    if (!database.objectStoreNames.contains('settings')) {
-                        database.createObjectStore('settings', { keyPath: 'key' });
-                    }
-                    if (!database.objectStoreNames.contains('categories')) {
-                        database.createObjectStore('categories', { keyPath: 'id' });
-                    }
-                    if (!database.objectStoreNames.contains('uiState')) {
-                        database.createObjectStore('uiState', { keyPath: 'key' });
-                    }
-                };
-            });
-        }
-
-        // DB Operations
-        function dbGet(store, key) {
-            if (useFallback) {
-                return Promise.resolve(fallbackData[store][key]);
-            }
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(store, 'readonly');
-                const objStore = tx.objectStore(store);
-                const request = objStore.get(key);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function dbGetAll(store) {
-            if (useFallback) {
-                return Promise.resolve(Object.values(fallbackData[store]));
-            }
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(store, 'readonly');
-                const objStore = tx.objectStore(store);
-                const request = objStore.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function dbPut(store, value) {
-            if (useFallback) {
-                fallbackData[store][getStoreKey(store, value)] = value;
-                saveFallback();
-                return Promise.resolve();
-            }
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(store, 'readwrite');
-                const objStore = tx.objectStore(store);
-                const request = objStore.put(value);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function dbDelete(store, key) {
-            if (useFallback) {
-                delete fallbackData[store][key];
-                saveFallback();
-                return Promise.resolve();
-            }
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(store, 'readwrite');
-                const objStore = tx.objectStore(store);
-                const request = objStore.delete(key);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        // Utilities
-        function generateId() {
-            return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        function formatDate(date) {
-            if (!date) return '从未';
-            const d = new Date(date);
-            return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast ' + type;
-            setTimeout(() => toast.classList.add('active'), 10);
-            setTimeout(() => {
-                toast.classList.remove('active');
-            }, 3000);
-        }
-
-        // Extract title from HTML
-        function extractTitle(html) {
-            const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-            return titleMatch ? titleMatch[1].trim() : '';
-        }
-
-        function extractDescription(html) {
-            const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i);
-            return metaMatch ? metaMatch[1].trim() : '';
-        }
-
-        // DOM Elements
-        const viewArea = document.getElementById('viewArea');
-        const pageTitle = document.getElementById('pageTitle');
-        const searchInput = document.getElementById('searchInput');
-        const categoryList = document.getElementById('categoryList');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-
-        // Rendering
-        function renderBooks() {
-            let filtered = state.books.slice();
-
-            if (state.currentFilter === 'recent') {
-                filtered = state.books.filter(b => b.lastReadAt).sort((a, b) => b.lastReadAt - a.lastReadAt);
-            } else if (state.currentFilter === 'unread') {
-                filtered = state.books.filter(b => !b.lastReadAt || b.progress === 0);
-            } else if (state.currentCategory) {
-                filtered = state.books.filter(b => b.categoryId === state.currentCategory);
-            }
-
-            if (state.searchQuery.trim()) {
-                const q = state.searchQuery.toLowerCase();
-                filtered = filtered.filter(b => 
-                    (b.title && b.title.toLowerCase().includes(q)) ||
-                    (b.description && b.description.toLowerCase().includes(q)) ||
-                    getCategoryName(b.categoryId).toLowerCase().includes(q)
-                );
-            }
-
-            // Sort: pinned first, then by updatedAt desc
-            filtered.sort((a, b) => {
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                return (b.updatedAt || 0) - (a.updatedAt || 0);
-            });
-
-            if (filtered.length === 0) {
-                viewArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📚</div>
-                        <div class="empty-title">还没有书籍</div>
-                        <div class="empty-desc">点击右上角“导入 HTML”添加你的第一本电子书，或从 GitHub 同步已有书库。</div>
-                        <button class="btn btn-primary" onclick="document.getElementById('importBtn').click()">立即导入</button>
-                    </div>
-                `;
-                return;
-            }
-
-            viewArea.innerHTML = '<div class="bookshelf" id="bookshelf"></div>';
-            const bookshelf = document.getElementById('bookshelf');
-            
-            filtered.forEach(book => {
-                const category = state.categories.find(c => c.id === book.categoryId) || state.categories[0];
-                const progress = book.progress || 0;
-                const card = document.createElement('div');
-                card.className = 'book-card' + (book.pinned ? ' pinned' : '');
-                card.innerHTML = `
-                    <div class="book-cover" style="background: linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%);">
-                        <div class="book-cover-title">${escapeHtml(book.title || 'Untitled')}</div>
-                        <div class="book-cover-icon">📄</div>
-                    </div>
-                    <div class="book-info">
-                        <div class="book-title">${escapeHtml(book.title || 'Untitled')}</div>
-                        <div class="book-meta">
-                            <span class="book-category" style="background: ${category.color}15; color: ${category.color};">${escapeHtml(category.name)}</span>
-                            <span>${formatFileSize(book.size || 0)}</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress}%"></div>
-                        </div>
-                        <div class="progress-text">${progress.toFixed(0)}% · 上次阅读 ${formatDate(book.lastReadAt)}</div>
-                    </div>
-                    <div class="book-actions">
-                        <button class="book-action-btn ${book.pinned ? 'pinned' : ''}" onclick="event.stopPropagation(); togglePinBook('${book.id}')" title="${book.pinned ? '取消置顶' : '置顶'}">📌</button>
-                        <button class="book-action-btn" onclick="event.stopPropagation(); downloadBook('${book.id}')" title="下载">⬇️</button>
-                        <button class="book-action-btn" onclick="event.stopPropagation(); editBookCategory('${book.id}')" title="分类">🏷️</button>
-                        <button class="book-action-btn" onclick="event.stopPropagation(); deleteBook('${book.id}')" title="删除">🗑️</button>
-                    </div>
-                `;
-                card.addEventListener('click', () => openReader(book.id));
-                bookshelf.appendChild(card);
-            });
-        }
-
-        function renderCategories() {
-            categoryList.innerHTML = '';
-            state.categories.forEach(cat => {
-                const item = document.createElement('div');
-                item.className = 'nav-item' + (state.currentCategory === cat.id ? ' active' : '');
-                item.dataset.view = 'shelf';
-                item.dataset.category = cat.id;
-                item.style.position = 'relative';
-                item.style.paddingRight = '36px';
-                item.innerHTML = `
-                    <span class="nav-icon" style="color: ${cat.color}">●</span>
-                    <span style="flex:1">${escapeHtml(cat.name)}</span>
-                    ${cat.id !== 'uncategorized' ? `<span class="cat-delete-btn" data-cat-id="${cat.id}" title="删除分类">✕</span>` : ''}
-                `;
-                item.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('cat-delete-btn')) {
-                        e.stopPropagation();
-                        deleteCategory(cat.id);
-                        return;
-                    }
-                    state.currentCategory = cat.id;
-                    state.currentFilter = 'category';
-                    pageTitle.textContent = escapeHtml(cat.name);
-                    updateActiveNav();
-                    renderBooks();
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                categoryList.appendChild(item);
-            });
-
-            // Update import category select
-            const importCategory = document.getElementById('importCategory');
-            importCategory.innerHTML = '<option value="">未分类</option>';
-            state.categories.forEach(cat => {
-                if (cat.id !== 'uncategorized') {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.name;
-                    importCategory.appendChild(option);
-                }
-            });
-        }
-
-        async function deleteCategory(id) {
-            if (!confirm('确定要删除这个分类吗？该分类下的书籍将移动到“未分类”。')) return;
-            
-            const booksInCategory = state.books.filter(b => b.categoryId === id);
-            for (const book of booksInCategory) {
-                book.categoryId = 'uncategorized';
-                book.updatedAt = Date.now();
-                await dbPut('books', book);
-            }
-            
-            state.categories = state.categories.filter(c => c.id !== id);
-            await dbDelete('categories', id);
-            
-            if (state.currentCategory === id) {
-                state.currentCategory = null;
-                state.currentFilter = 'all';
-                pageTitle.textContent = '全部书籍';
-            }
-            
-            renderCategories();
-            updateActiveNav();
-            renderBooks();
-            showToast('分类已删除');
-
-            syncToGitHub().catch(err => console.error('Sync after delete category failed:', err));
-        }
-
-        function updateActiveNav() {
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-                if (state.currentFilter === 'category' && item.dataset.category === state.currentCategory) {
-                    item.classList.add('active');
-                } else if (item.dataset.filter === state.currentFilter) {
-                    item.classList.add('active');
-                }
-            });
-        }
-
-        function getCategoryName(id) {
-            const cat = state.categories.find(c => c.id === id);
-            return cat ? cat.name : '未分类';
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Sidebar toggle
-        let sidebarCollapsed = false;
-
-        async function loadUIState() {
-            try {
-                const saved = await dbGet('uiState', 'sidebar');
-                if (saved && saved.value) {
-                    sidebarCollapsed = saved.value.collapsed;
-                    applySidebarState();
-                }
-            } catch (e) {
-                console.log('No UI state saved');
-            }
-        }
-
-        function applySidebarState() {
-            if (window.innerWidth <= 1024) {
-                sidebar.classList.remove('collapsed');
-                sidebarToggle.style.display = 'none';
-                return;
-            }
-            sidebarToggle.style.display = 'flex';
-            if (sidebarCollapsed) {
-                sidebar.classList.add('collapsed');
-                sidebarToggle.textContent = '▶';
-                sidebarToggle.title = '展开';
-            } else {
-                sidebar.classList.remove('collapsed');
-                sidebarToggle.textContent = '◀';
-                sidebarToggle.title = '收起';
-            }
-        }
-
-        sidebarToggle.addEventListener('click', async () => {
-            sidebarCollapsed = !sidebarCollapsed;
-            applySidebarState();
-            await dbPut('uiState', { key: 'sidebar', value: { collapsed: sidebarCollapsed } });
-        });
-
-        mobileMenuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-        });
-
-        window.addEventListener('resize', () => {
-            applySidebarState();
-        });
-
-        // Close mobile sidebar when clicking outside
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
-                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    sidebar.classList.remove('open');
-                }
-            }
-        });
-
-        // Navigation
-        document.querySelectorAll('.nav-item[data-view="shelf"]').forEach(item => {
-            item.addEventListener('click', () => {
-                const filter = item.dataset.filter;
-                if (filter) {
-                    state.currentFilter = filter;
-                    state.currentCategory = null;
-                    if (filter === 'all') pageTitle.textContent = '全部书籍';
-                    else if (filter === 'recent') pageTitle.textContent = '最近阅读';
-                    else if (filter === 'unread') pageTitle.textContent = '未读';
-                }
-                updateActiveNav();
-                renderBooks();
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('open');
-                }
-            });
-        });
-
-        document.querySelector('.nav-item[data-view="settings"]').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.add('active');
-            loadSettingsForm();
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('open');
-            }
-        });
-
-        // Search
-        searchInput.addEventListener('input', (e) => {
-            state.searchQuery = e.target.value;
-            renderBooks();
-        });
-
-        // Import Modal
-        const importModal = document.getElementById('importModal');
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileList = document.getElementById('fileList');
-
-        document.getElementById('importBtn').addEventListener('click', () => {
-            state.pendingFiles = [];
-            fileList.innerHTML = '';
-            importModal.classList.add('active');
-        });
-
-        document.getElementById('cancelImport').addEventListener('click', () => {
-            importModal.classList.remove('active');
-        });
-
-        document.getElementById('selectFilesBtn').addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        dropZone.addEventListener('click', (e) => {
-            if (e.target === dropZone || e.target.classList.contains('drop-zone-title') || 
-                e.target.classList.contains('drop-zone-desc') || e.target.classList.contains('drop-zone-icon')) {
-                fileInput.click();
-            }
-        });
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        function handleFiles(files) {
-            Array.from(files).forEach(file => {
-                if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-                    state.pendingFiles.push(file);
-                }
-            });
-            renderFileList();
-        }
-
-        function renderFileList() {
-            fileList.innerHTML = '';
-            state.pendingFiles.forEach((file) => {
-                const item = document.createElement('div');
-                item.className = 'file-item';
-                item.innerHTML = `
-                    <span class="file-item-name">${escapeHtml(file.name)}</span>
-                    <span class="file-item-size">${formatFileSize(file.size)}</span>
-                `;
-                fileList.appendChild(item);
-            });
-        }
-
-        document.getElementById('confirmImport').addEventListener('click', async () => {
-            if (state.pendingFiles.length === 0) {
-                showToast('请先选择 HTML 文件', 'error');
-                return;
-            }
-
-            const categoryId = document.getElementById('importCategory').value || 'uncategorized';
-            const importBtn = document.getElementById('confirmImport');
-            importBtn.innerHTML = '<span class="loading"><span class="spinner"></span>导入中...</span>';
-            importBtn.disabled = true;
-
-            for (const file of state.pendingFiles) {
-                try {
-                    const content = await readFileAsText(file);
-                    const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
-                    const description = extractDescription(content);
-                    const book = {
-                        id: generateId(),
-                        title,
-                        description,
-                        content,
-                        size: file.size,
-                        categoryId,
-                        progress: 0,
-                        scrollPosition: 0,
-                        pinned: false,
-                        createdAt: Date.now(),
-                        updatedAt: Date.now(),
-                        lastReadAt: null
-                    };
-                    await dbPut('books', book);
-                    state.books.push(book);
-                } catch (err) {
-                    console.error('Import error:', err);
-                    showToast(`导入 ${file.name} 失败`, 'error');
-                }
-            }
-
-            importBtn.innerHTML = '导入';
-            importBtn.disabled = false;
-            importModal.classList.remove('active');
-            const importedCount = state.pendingFiles.length;
-            state.pendingFiles = [];
-            fileList.innerHTML = '';
-            renderBooks();
-            showToast(`成功导入 ${importedCount} 本书籍`);
-
-            const synced = await syncToGitHub().catch(err => {
-                console.error('Sync after import failed:', err);
-                return false;
-            });
-            if (!synced && !state.settings.githubToken) {
-                showToast('未配置 Token，书籍仅保存在本地', 'error');
-            } else if (!synced) {
-                showToast('同步到 GitHub 失败，请检查 Token 和网络', 'error');
-            }
-        });
-
-        function readFileAsText(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsText(file);
-            });
-        }
-
-        // Category Management
-        const categoryModal = document.getElementById('categoryModal');
-        let editingCategory = null;
-
-        document.getElementById('addCategoryBtn').addEventListener('click', () => {
-            editingCategory = null;
-            document.getElementById('categoryModalTitle').textContent = '新建分类';
-            document.getElementById('categoryNameInput').value = '';
-            categoryModal.classList.add('active');
-        });
-
-        document.getElementById('cancelCategory').addEventListener('click', () => {
-            categoryModal.classList.remove('active');
-        });
-
-        document.getElementById('confirmCategory').addEventListener('click', async () => {
-            const name = document.getElementById('categoryNameInput').value.trim();
-            if (!name) {
-                showToast('请输入分类名称', 'error');
-                return;
-            }
-
-            const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5856d6', '#5ac8fa'];
-            if (editingCategory) {
-                const cat = state.categories.find(c => c.id === editingCategory);
-                if (cat) {
-                    cat.name = name;
-                    await dbPut('categories', cat);
-                }
-            } else {
-                const newCat = {
-                    id: generateId(),
-                    name,
-                    color: colors[Math.floor(Math.random() * colors.length)]
-                };
-                state.categories.push(newCat);
-                await dbPut('categories', newCat);
-            }
-
-            categoryModal.classList.remove('active');
-            renderCategories();
-            renderBooks();
-            showToast('分类已保存');
-        });
-
-        // Reader
-        let currentBookId = null;
-        const readerContainer = document.getElementById('readerContainer');
-        const readerContent = document.getElementById('readerContent');
-        const readerInner = document.getElementById('readerInner');
-
-        async function openReader(bookId) {
-            const book = state.books.find(b => b.id === bookId);
-            if (!book) return;
-
-            currentBookId = bookId;
-            readerContainer.classList.add('active');
-            
-            readerInner.innerHTML = '';
-            const iframe = document.createElement('iframe');
-            iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation';
-            iframe.style.cssText = 'width:100%;height:100vh;border:none;display:block;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99;background:white;';
-            readerInner.appendChild(iframe);
-
-            const blob = new Blob([book.content], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            iframe.src = url;
-
-            iframe.onload = () => {
-                if (book.scrollPosition) {
-                    iframe.contentWindow.scrollTo(0, book.scrollPosition);
-                }
-                
-                const doc = iframe.contentDocument || iframe.contentWindow.document;
-                const updateProgress = () => {
-                    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
-                    const scrollHeight = doc.documentElement.scrollHeight - doc.documentElement.clientHeight;
-                    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-                    book.progress = Math.min(100, Math.max(0, progress));
-                    book.scrollPosition = scrollTop;
-                    book.lastReadAt = Date.now();
-                    
-                    if (window.saveProgressTimeout) clearTimeout(window.saveProgressTimeout);
-                    window.saveProgressTimeout = setTimeout(() => {
-                        dbPut('books', book);
-                        syncToGitHub().catch(err => console.error('Sync progress failed:', err));
-                    }, 5000);
-                };
-                
-                doc.addEventListener('scroll', updateProgress, true);
-                updateProgress();
-            };
-
-            book.lastReadAt = Date.now();
-            await dbPut('books', book);
-            renderBooks();
-        }
-
-        document.getElementById('closeReader').addEventListener('click', () => {
-            readerContainer.classList.remove('active');
-            currentBookId = null;
-            readerInner.innerHTML = '';
-            renderBooks();
-        });
-
-        // Book Actions
-        async function deleteBook(id) {
-            if (!confirm('确定要删除这本书吗？')) return;
-            try {
-                await dbDelete('books', id);
-                state.books = state.books.filter(b => b.id !== id);
-                renderBooks();
-                showToast('书籍已删除');
-                await syncToGitHub();
-            } catch (err) {
-                console.error('Delete book error:', err);
-                showToast('删除失败: ' + err.message, 'error');
-            }
-        }
-
-        async function togglePinBook(id) {
-            const book = state.books.find(b => b.id === id);
-            if (!book) return;
-            book.pinned = !book.pinned;
-            book.updatedAt = Date.now();
-            await dbPut('books', book);
-            renderBooks();
-            showToast(book.pinned ? '已置顶' : '已取消置顶');
-            syncToGitHub().catch(err => console.error('Sync pin failed:', err));
-        }
-
-        function downloadBook(id) {
-            const book = state.books.find(b => b.id === id);
-            if (!book) return;
-            const blob = new Blob([book.content], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = (book.title || 'book') + '.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('开始下载');
-        }
-
-        async function editBookCategory(id) {
-            const book = state.books.find(b => b.id === id);
-            if (!book) return;
-            
-            const categoryOptions = state.categories.map(c => 
-                `<option value="${c.id}" ${c.id === book.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
-            ).join('');
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay active';
-            modal.innerHTML = `
-                <div class="modal" style="max-width: 360px;">
-                    <div class="modal-header">
-                        <div class="modal-title">选择分类</div>
-                    </div>
-                    <div class="modal-body">
-                        <select class="form-select" style="margin-bottom: 12px;">
-                            ${categoryOptions}
-                        </select>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
-                        <button class="btn btn-primary">保存</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            const confirmBtn = modal.querySelector('.btn-primary');
-            confirmBtn.addEventListener('click', async () => {
-                const newCat = modal.querySelector('select').value;
-                book.categoryId = newCat;
-                book.updatedAt = Date.now();
-                await dbPut('books', book);
-                renderCategories();
-                renderBooks();
-                modal.remove();
-                showToast('分类已更新');
-                syncToGitHub().catch(err => console.error('Sync category change failed:', err));
-            });
-        }
-
-        // Settings
-        const settingsModal = document.getElementById('settingsModal');
-
-        document.getElementById('cancelSettings').addEventListener('click', () => {
-            settingsModal.classList.remove('active');
-        });
-
-        document.getElementById('saveSettings').addEventListener('click', async () => {
-            try {
-                state.settings.githubToken = document.getElementById('githubToken').value.trim();
-
-                await dbPut('settings', { key: 'config', value: state.settings });
-                settingsModal.classList.remove('active');
-                showToast('设置已保存');
-            } catch (err) {
-                console.error('Save settings error:', err);
-                showToast('保存失败: ' + (err && err.message ? err.message : '未知错误'), 'error');
-            }
-        });
-
-        function loadSettingsForm() {
-            document.getElementById('githubToken').value = state.settings.githubToken || '';
-        }
-
-        // GitHub API Integration
-        function getGitHubHeaders() {
-            return {
-                'Authorization': `token ${state.settings.githubToken}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            };
-        }
-
-        async function syncFromGitHub() {
-            try {
-                const repoApiBase = `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`;
-                
-                const listRes = await fetch(`${repoApiBase}/contents/books`);
-                if (!listRes.ok) {
-                    if (listRes.status === 404) {
-                        console.log('仓库中还没有 books 目录');
-                    } else {
-                        console.error(`GitHub API error: ${listRes.status}`);
-                    }
-                    return;
-                }
-                const files = await listRes.json();
-                const htmlFiles = files.filter(f => f.type === 'file' && (f.name.endsWith('.html') || f.name.endsWith('.htm')));
-
-                let metaContent = null;
-                try {
-                    const metaRes = await fetch(`${repoApiBase}/contents/reader-metadata.json`);
-                    if (metaRes.ok) {
-                        const metaData = await metaRes.json();
-                        metaContent = JSON.parse(decodeURIComponent(escape(atob(metaData.content))));
-                    }
-                } catch (e) {
-                    console.log('No metadata found');
-                }
-
-                if (metaContent && metaContent.categories) {
-                    // If remote categories are garbled, keep local defaults and re-sync later
-                    const hasGarbledCategory = metaContent.categories.some(c => isGarbledText(c.name));
-                    if (!hasGarbledCategory) {
-                        state.categories = metaContent.categories;
-                        for (const cat of state.categories) {
-                            await dbPut('categories', cat);
-                        }
-                    } else {
-                        console.warn('Remote categories are garbled, keeping local defaults');
-                        // Mark that we need to re-upload corrected metadata
-                        window.needMetaResync = true;
-                    }
-                }
-
-                const bookMetas = metaContent && metaContent.books ? metaContent.books : [];
-                let loadedCount = 0;
-
-                // Build set of IDs from remote
-                const remoteIds = new Set();
-
-                for (const file of htmlFiles) {
-                    const bookRes = await fetch(`${repoApiBase}/contents/books/${encodeURIComponent(file.name)}`);
-                    if (!bookRes.ok) continue;
-                    const bookData = await bookRes.json();
-                    const content = decodeURIComponent(escape(atob(bookData.content)));
-                    const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
-                    const description = extractDescription(content);
-                    const id = file.name.replace(/\.html?$/, '');
-                    remoteIds.add(id);
-                    const meta = bookMetas.find(b => b.id === id) || {};
-                    
-                    const validCategoryId = (catId) => state.categories.some(c => c.id === catId) ? catId : 'uncategorized';
-                    const existing = state.books.find(b => b.id === id);
-                    if (existing) {
-                        existing.content = content;
-                        existing.title = title;
-                        existing.description = description;
-                        existing.size = content.length;
-                        existing.categoryId = validCategoryId(meta.categoryId) || existing.categoryId;
-                        existing.progress = meta.progress || existing.progress || 0;
-                        existing.scrollPosition = meta.scrollPosition || existing.scrollPosition || 0;
-                        existing.pinned = !!meta.pinned;
-                        existing.updatedAt = Date.now();
-                        await dbPut('books', existing);
-                    } else {
-                        const book = {
-                            id,
-                            title,
-                            description,
-                            content,
-                            size: content.length,
-                            categoryId: validCategoryId(meta.categoryId),
-                            progress: meta.progress || 0,
-                            scrollPosition: meta.scrollPosition || 0,
-                            pinned: !!meta.pinned,
-                            createdAt: meta.createdAt || Date.now(),
-                            updatedAt: Date.now(),
-                            lastReadAt: meta.lastReadAt || null
-                        };
-                        await dbPut('books', book);
-                        state.books.push(book);
-                    }
-                    loadedCount++;
-                }
-
-                renderCategories();
-                renderBooks();
-                if (loadedCount > 0) showToast(`已从 GitHub 加载 ${loadedCount} 本书籍`);
-            } catch (err) {
-                console.error('Sync error:', err);
-                showToast('同步失败: ' + err.message, 'error');
-            }
-        }
-
-        async function syncToGitHub() {
-            if (!state.settings.githubToken) {
-                return false;
-            }
-
-            try {
-                const repoRes = await fetch(
-                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`,
-                    { headers: getGitHubHeaders() }
-                );
-                if (!repoRes.ok) throw new Error('无法访问仓库，请检查 Token');
-                const repoData = await repoRes.json();
-                const branch = repoData.default_branch || 'main';
-
-                const listRes = await fetch(
-                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books`,
-                    { headers: getGitHubHeaders() }
-                );
-                const existingFiles = listRes.ok ? await listRes.json() : [];
-                const existingHtmlFiles = existingFiles.filter(f => f.type === 'file' && (f.name.endsWith('.html') || f.name.endsWith('.htm')));
-                const currentIds = new Set(state.books.map(b => b.id));
-
-                // Delete files that are no longer in local books
-                for (const file of existingHtmlFiles) {
-                    const fileId = file.name.replace(/\.html?$/, '');
-                    if (!currentIds.has(fileId)) {
-                        const deleteRes = await fetch(
-                            `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books/${encodeURIComponent(file.name)}`,
-                            {
-                                method: 'DELETE',
-                                headers: getGitHubHeaders(),
-                                body: JSON.stringify({
-                                    message: `Delete book: ${file.name}`,
-                                    sha: file.sha,
-                                    branch: branch
-                                })
-                            }
-                        );
-                        if (!deleteRes.ok) {
-                            console.error(`Failed to delete ${file.name}:`, deleteRes.status);
-                        }
-                    }
-                }
-
-                // Upload/update each book
-                const bookMetas = [];
-                for (const book of state.books) {
-                    const filename = `${book.id}.html`;
-                    const path = `books/${filename}`;
-                    const contentEncoded = btoa(unescape(encodeURIComponent(book.content)));
-                    
-                    const existingRes = await fetch(
-                        `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/${path}`,
-                        { headers: getGitHubHeaders() }
-                    );
-                    let sha = null;
-                    if (existingRes.ok) {
-                        const existingData = await existingRes.json();
-                        sha = existingData.sha;
-                    }
-
-                    const uploadRes = await fetch(
-                        `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/${path}`,
-                        {
-                            method: 'PUT',
-                            headers: getGitHubHeaders(),
-                            body: JSON.stringify({
-                                message: `Update book: ${book.title}`,
-                                content: contentEncoded,
-                                sha: sha,
-                                branch: branch
-                            })
-                        }
-                    );
-                    if (!uploadRes.ok && uploadRes.status !== 422) {
-                        throw new Error(`上传失败: ${uploadRes.status}`);
-                    }
-
-                    bookMetas.push({
-                        id: book.id,
-                        title: book.title,
-                        description: book.description,
-                        filename,
-                        categoryId: book.categoryId,
-                        progress: book.progress,
-                        scrollPosition: book.scrollPosition,
-                        pinned: !!book.pinned,
-                        createdAt: book.createdAt,
-                        updatedAt: book.updatedAt,
-                        lastReadAt: book.lastReadAt
-                    });
-                }
-
-                // Upload metadata
-                const metadata = {
-                    version: 1,
-                    updatedAt: Date.now(),
-                    categories: state.categories,
-                    books: bookMetas
-                };
-                const metaEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(metadata, null, 2))));
-                
-                const existingMetaRes = await fetch(
-                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/reader-metadata.json`,
-                    { headers: getGitHubHeaders() }
-                );
-                let metaSha = null;
-                if (existingMetaRes.ok) {
-                    const existingMeta = await existingMetaRes.json();
-                    metaSha = existingMeta.sha;
-                }
-
-                const metaUploadRes = await fetch(
-                    `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/reader-metadata.json`,
-                    {
-                        method: 'PUT',
-                        headers: getGitHubHeaders(),
-                        body: JSON.stringify({
-                            message: 'Update reader metadata',
-                            content: metaEncoded,
-                            sha: metaSha,
-                            branch: branch
-                        })
-                    }
-                );
-                if (!metaUploadRes.ok) throw new Error('元数据同步失败');
-
-                showToast('已同步到 GitHub');
-                return true;
-            } catch (err) {
-                console.error('Sync to GitHub error:', err);
-                showToast('同步失败: ' + err.message, 'error');
-                return false;
-            }
-        }
-
-        // Initialization
-        async function init() {
-            await initDB();
-            
-            const savedCategories = await dbGetAll('categories');
-            if (savedCategories.length > 0) {
-                // Detect garbled categories (from old buggy atob decoding)
-                const hasGarbled = savedCategories.some(c => isGarbledText(c.name));
-                if (hasGarbled) {
-                    console.warn('Detected garbled categories, resetting to defaults');
-                    for (const cat of savedCategories) {
-                        await dbDelete('categories', cat.id);
-                    }
-                    for (const cat of state.categories) {
-                        await dbPut('categories', cat);
-                    }
-                } else {
-                    state.categories = savedCategories;
-                }
-            } else {
-                for (const cat of state.categories) {
-                    await dbPut('categories', cat);
-                }
-            }
-
-            const savedBooks = await dbGetAll('books');
-            state.books = savedBooks;
-
-            const savedSettings = await dbGet('settings', 'config');
-            if (savedSettings) {
-                state.settings = { ...state.settings, ...savedSettings.value };
-            }
-
-            await loadUIState();
-            applySidebarState();
-
-            renderCategories();
-            renderBooks();
-
-            syncFromGitHub().then(() => {
-                if (window.needMetaResync && state.settings.githubToken) {
-                    console.log('Re-syncing corrected metadata to GitHub');
-                    window.needMetaResync = false;
-                    return syncToGitHub();
-                }
-            }).catch(err => console.error('Initial sync error:', err));
-        }
-
-        init().catch(err => {
-            console.error('Init error:', err);
-            showToast('初始化失败', 'error');
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                importModal.classList.remove('active');
-                categoryModal.classList.remove('active');
-                settingsModal.classList.remove('active');
-                if (readerContainer.classList.contains('active')) {
-                    readerContainer.classList.remove('active');
-                    currentBookId = null;
-                    readerInner.innerHTML = '';
-                    renderBooks();
-                }
-            }
-        });
-    </script>
+    <div class="ctx-item" onclick="showChangeCat('${bookId}');hideCtx()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      更改分类
+    </div>
+    <div class="ctx-item" onclick="downloadBook('${bookId}');hideCtx()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      下载
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" onclick="deleteBook('${bookId}');hideCtx()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      删除
+    </div>`;
+
+  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const y = Math.min(e.clientY, window.innerHeight - 250);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('active');
+}
+
+function hideCtx() {
+  document.getElementById('ctxMenu').classList.remove('active');
+}
+
+function showChangeCat(bookId) {
+  const book = state.books.find(b => b.id === bookId);
+  if (!book) return;
+  const cat = prompt('选择分类ID:\n' + state.categories.map(c => `${c.id}: ${c.name}`).join('\n'), book.category);
+  if (cat && state.categories.find(c => c.id === cat)) {
+    book.category = cat;
+    saveMetadata();
+    renderBooks();
+    renderCategories();
+    toast('分类已更新');
+  }
+}
+
+document.addEventListener('click', hideCtx);
+
+// ===== VIEW =====
+function setView(mode) {
+  state.viewMode = mode;
+  document.getElementById('gridViewBtn').classList.toggle('active', mode === 'grid');
+  document.getElementById('listViewBtn').classList.toggle('active', mode === 'list');
+  renderBooks();
+}
+
+// ===== SEARCH =====
+function onSearch() {
+  state.searchQuery = document.getElementById('searchInput').value.trim();
+  renderBooks();
+}
+
+// ===== DROP ZONE =====
+let dragCounter = 0;
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  document.getElementById('dropZone').classList.add('active');
+});
+document.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    document.getElementById('dropZone').classList.remove('active');
+  }
+});
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  document.getElementById('dropZone').classList.remove('active');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.html') || f.name.endsWith('.htm'));
+  if (files.length > 0) {
+    pendingFiles = files;
+    showImport();
+    document.getElementById('fileLabel').textContent = files.map(f => f.name).join(', ');
+    if (files.length === 1) {
+      document.getElementById('importTitle').value = files[0].name.replace(/\.html?$/i, '');
+    }
+  }
+});
+
+// File drop area highlight
+const fileDropArea = document.getElementById('fileDropArea');
+fileDropArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  fileDropArea.style.borderColor = 'var(--blue)';
+  fileDropArea.style.background = 'rgba(0,122,255,.04)';
+});
+fileDropArea.addEventListener('dragleave', () => {
+  fileDropArea.style.borderColor = 'var(--border)';
+  fileDropArea.style.background = '';
+});
+fileDropArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  fileDropArea.style.borderColor = 'var(--border)';
+  fileDropArea.style.background = '';
+  onFileSelect(e.dataTransfer.files);
+});
+
+// ===== MOBILE SIDEBAR =====
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ===== UTILS =====
+function escHtml(s) {
+  const el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return '今天';
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return '昨天';
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function toast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 2500);
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('readerView').classList.contains('active')) {
+      closeReader();
+    } else if (document.getElementById('importModal').classList.contains('active')) {
+      hideImport();
+    } else if (document.getElementById('catModal').classList.contains('active')) {
+      hideCatModal();
+    } else if (document.getElementById('settingsModal').classList.contains('active')) {
+      hideSettings();
+    }
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+});
+
+function showSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+  document.getElementById('settingsToken').value = getGHToken();
+  document.getElementById('settingsStatus').innerHTML = '';
+}
+
+function hideSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+async function testToken() {
+  const token = document.getElementById('settingsToken').value.trim();
+  if (!token) return;
+  const statusEl = document.getElementById('settingsStatus');
+  statusEl.innerHTML = '<span style="color:var(--text2)">连接中...</span>';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.ok) {
+      statusEl.innerHTML = '<span style="color:var(--green)">✓ 连接成功</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--red)">✗ Token 无效或权限不足</span>';
+    }
+  } catch (e) {
+    statusEl.innerHTML = '<span style="color:var(--red)">✗ 网络错误</span>';
+  }
+}
+
+function saveSettings() {
+  const token = document.getElementById('settingsToken').value.trim();
+  if (!token) return toast('请输入 Token', 'error');
+  setGH(token);
+  hideSettings();
+  toast('设置已保存');
+  init();
+}
+
+// ===== INIT =====
+async function init() {
+  renderCategories();
+  renderBooks();
+  if (!getGHToken()) {
+    showSettings();
+    return;
+  }
+  try {
+    await loadMetadata();
+    renderCategories();
+    renderBooks();
+  } catch (e) {
+    console.error('Init failed:', e);
+    if (e.message.includes('401') || e.message.includes('403')) {
+      showSettings();
+      toast('Token 无效，请重新设置', 'error');
+    } else {
+      toast('加载数据失败: ' + e.message, 'error');
+    }
+  }
+}
+
+init();
+</script>
 </body>
 </html>
