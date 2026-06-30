@@ -24,13 +24,15 @@ input,select,textarea{font-family:inherit;font-size:14px}
 
 /* === LAYOUT === */
 .app{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:var(--sidebar-w);background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .3s ease}
+.sidebar{width:var(--sidebar-w);background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:margin-left .3s ease;margin-left:0}
+.sidebar.collapsed{margin-left:calc(var(--sidebar-w) * -1)}
+.sidebar-toggle{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s;flex-shrink:0}
+.sidebar-toggle:hover{background:rgba(0,0,0,.04);color:var(--text)}
+.sidebar-toggle svg{width:18px;height:18px}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
 /* === SIDEBAR === */
 .sidebar-header{padding:20px 20px 12px;display:flex;align-items:center;gap:10px}
-.sidebar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#5856d6);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.sidebar-logo svg{width:18px;height:18px;fill:#fff}
 .sidebar-title{font-size:17px;font-weight:600;letter-spacing:-.2px}
 .sidebar-section{padding:8px 12px}
 .sidebar-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;padding:8px 8px 4px;display:flex;align-items:center;justify-content:space-between}
@@ -193,14 +195,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
 
 /* === RESPONSIVE === */
 @media(max-width:768px){
-  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;margin-left:0;transform:translateX(-100%)}
+  .sidebar.collapsed{transform:translateX(-100%);margin-left:0}
+  .sidebar:not(.collapsed){transform:translateX(0)}
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-  .menu-btn{display:flex!important}
 }
-.menu-btn{display:none;width:36px;height:36px;border-radius:8px;align-items:center;justify-content:center}
-.menu-btn:hover{background:rgba(0,0,0,.04)}
-.menu-btn svg{width:20px;height:20px}
 </style>
 </head>
 <body>
@@ -208,9 +207,9 @@ input,select,textarea{font-family:inherit;font-size:14px}
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起侧边栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="11 17 6 12 11 7"/></svg>
+      </button>
       <span class="sidebar-title">HTML Reader</span>
     </div>
     <div class="sidebar-section" style="flex:1;overflow-y:auto">
@@ -223,18 +222,17 @@ input,select,textarea{font-family:inherit;font-size:14px}
       <ul class="cat-list" id="catList"></ul>
     </div>
     <div class="sidebar-footer">
-      <button onclick="showSettings()" style="color:var(--text2);font-size:12px;display:flex;align-items:center;gap:4px;margin:0 auto 6px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+      <button onclick="showSettings()" style="color:var(--text2);font-size:12px;display:flex;align-items:center;gap:4px;margin:0 auto" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         设置
       </button>
-      <div>HTML Reader v1.0</div>
     </div>
   </aside>
 
   <!-- Main -->
   <div class="main">
     <div class="topbar">
-      <button class="menu-btn" onclick="toggleSidebar()">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="切换侧边栏">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="search-box">
@@ -358,6 +356,25 @@ input,select,textarea{font-family:inherit;font-size:14px}
 
 <!-- Context Menu -->
 <div class="context-menu" id="ctxMenu"></div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="confirmTitle">确认</span>
+      <button class="modal-close" onclick="hideConfirm(false)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="font-size:14px;line-height:1.6;color:var(--text2);margin-bottom:20px"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideConfirm(false)">取消</button>
+        <button class="btn btn-primary" id="confirmOkBtn" onclick="hideConfirm(true)" style="background:var(--red)">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Change Category Modal -->
 <div class="modal-overlay" id="changeCatModal">
@@ -704,10 +721,11 @@ function addCategory() {
   toast('分类已创建');
 }
 
-function deleteCategory(id) {
+async function deleteCategory(id) {
   const booksInCat = state.books.filter(b => b.category === id);
   if (booksInCat.length > 0) {
-    if (!confirm(`该分类下有 ${booksInCat.length} 个文档，删除后这些文档将移至「未分类」。确定删除？`)) return;
+    const ok = await showConfirm('删除分类', `该分类下有 ${booksInCat.length} 个文档，删除后这些文档将移至「未分类」。确定删除？`);
+    if (!ok) return;
     booksInCat.forEach(b => b.category = 'uncategorized');
   }
   state.categories = state.categories.filter(c => c.id !== id);
@@ -974,7 +992,8 @@ function downloadCurrent() {
 async function deleteBook(bookId) {
   const book = state.books.find(b => b.id === bookId);
   if (!book) return;
-  if (!confirm(`确定删除「${book.title}」？此操作不可撤销。`)) return;
+  const ok = await showConfirm('删除文档', `确定删除「${book.title}」？此操作不可撤销。`);
+  if (!ok) return;
 
   try {
     const file = await getFile(`${BOOKS_DIR}/${book.filename}`);
@@ -1135,8 +1154,37 @@ fileDropArea.addEventListener('drop', (e) => {
 });
 
 // ===== MOBILE SIDEBAR =====
+// ===== CONFIRM MODAL =====
+let confirmResolve = null;
+
+function showConfirm(title, msg, okText = '确定') {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    const btn = document.getElementById('confirmOkBtn');
+    btn.textContent = okText;
+    document.getElementById('confirmModal').classList.add('active');
+  });
+}
+
+function hideConfirm(result) {
+  document.getElementById('confirmModal').classList.remove('active');
+  if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
+}
+
+// ===== SIDEBAR =====
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  localStorage.setItem('hr_sidebar', sb.classList.contains('collapsed') ? 'collapsed' : 'open');
+}
+
+function restoreSidebar() {
+  const saved = localStorage.getItem('hr_sidebar');
+  if (saved === 'collapsed') {
+    document.getElementById('sidebar').classList.add('collapsed');
+  }
 }
 
 // ===== UTILS =====
@@ -1182,6 +1230,8 @@ document.addEventListener('keydown', (e) => {
       hideSettings();
     } else if (document.getElementById('changeCatModal').classList.contains('active')) {
       hideChangeCat();
+    } else if (document.getElementById('confirmModal').classList.contains('active')) {
+      hideConfirm(false);
     }
   }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -1231,6 +1281,7 @@ function saveSettings() {
 
 // ===== INIT =====
 async function init() {
+  restoreSidebar();
   renderCategories();
   renderBooks();
   if (!getGHToken()) {
