@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HTML Reader</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +27,7 @@
             --radius-lg: 18px;
             --radius-xl: 24px;
             --sidebar-width: 260px;
+            --sidebar-collapsed-width: 64px;
         }
 
         * {
@@ -71,17 +72,50 @@
             border-right: 1px solid var(--border-light);
             display: flex;
             flex-direction: column;
-            padding: 24px 16px;
+            padding: 20px 16px;
             z-index: 10;
+            transition: width 0.3s ease, transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+            padding: 20px 12px;
+        }
+
+        .sidebar.collapsed .brand-text,
+        .sidebar.collapsed .brand-sub,
+        .sidebar.collapsed .nav-title,
+        .sidebar.collapsed .nav-item span:last-child,
+        .sidebar.collapsed .add-category-btn span:last-child,
+        .sidebar.collapsed .sidebar-footer span:last-child {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item,
+        .sidebar.collapsed .add-category-btn {
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .sidebar.collapsed .nav-icon {
+            margin: 0;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 0 12px 24px;
+            justify-content: space-between;
+            padding: 0 4px 20px;
             border-bottom: 1px solid var(--border-light);
             margin-bottom: 20px;
+        }
+
+        .brand-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
         }
 
         .brand-icon {
@@ -96,12 +130,14 @@
             font-size: 18px;
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0,122,255,0.25);
+            flex-shrink: 0;
         }
 
         .brand-text {
             font-size: 18px;
             font-weight: 600;
             letter-spacing: -0.3px;
+            white-space: nowrap;
         }
 
         .brand-sub {
@@ -110,10 +146,29 @@
             font-weight: 500;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .sidebar-toggle {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: 14px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         .nav-section {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .nav-title {
@@ -124,6 +179,7 @@
             letter-spacing: 0.8px;
             padding: 0 12px;
             margin-bottom: 10px;
+            white-space: nowrap;
         }
 
         .nav-item {
@@ -138,6 +194,7 @@
             transition: all 0.2s ease;
             margin-bottom: 2px;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .nav-item:hover {
@@ -157,6 +214,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .category-list {
@@ -184,6 +242,7 @@
             font-weight: 500;
             margin-top: 6px;
             transition: background 0.2s;
+            cursor: pointer;
         }
 
         .add-category-btn:hover {
@@ -194,34 +253,6 @@
             margin-top: auto;
             padding-top: 16px;
             border-top: 1px solid var(--border-light);
-        }
-
-        .sync-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: var(--radius-md);
-            font-size: 12px;
-            color: var(--text-secondary);
-            background: var(--bg-tertiary);
-            margin-bottom: 10px;
-        }
-
-        .sync-status.connected {
-            color: #34c759;
-            background: rgba(52,199,89,0.08);
-        }
-
-        .sync-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-tertiary);
-        }
-
-        .sync-status.connected .sync-dot {
-            background: #34c759;
         }
 
         .cat-delete-btn {
@@ -269,20 +300,42 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 28px;
+            padding: 0 24px;
             z-index: 5;
+            gap: 12px;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 18px;
+            background: var(--bg-secondary);
         }
 
         .page-title {
             font-size: 20px;
             font-weight: 600;
             letter-spacing: -0.5px;
+            white-space: nowrap;
         }
 
         .top-actions {
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
         }
 
         .search-box {
@@ -323,12 +376,14 @@
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
             padding: 10px 16px;
             border-radius: 10px;
             font-size: 14px;
             font-weight: 500;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -369,7 +424,7 @@
         .view-area {
             flex: 1;
             overflow-y: auto;
-            padding: 28px;
+            padding: 24px;
             position: relative;
         }
 
@@ -395,6 +450,7 @@
             height: 100%;
             text-align: center;
             color: var(--text-secondary);
+            padding: 24px;
         }
 
         .empty-icon {
@@ -445,6 +501,15 @@
         .book-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-md);
+        }
+
+        .book-card.pinned::after {
+            content: '📌';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 14px;
+            z-index: 2;
         }
 
         .book-cover {
@@ -554,7 +619,8 @@
             transition: opacity 0.2s;
         }
 
-        .book-card:hover .book-actions {
+        .book-card:hover .book-actions,
+        .book-actions:focus-within {
             opacity: 1;
         }
 
@@ -569,10 +635,16 @@
             font-size: 13px;
             color: var(--text-secondary);
             box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            transition: all 0.15s;
         }
 
         .book-action-btn:hover {
             background: white;
+            color: var(--accent);
+            transform: scale(1.08);
+        }
+
+        .book-action-btn.pinned {
             color: var(--accent);
         }
 
@@ -633,16 +705,6 @@
             box-shadow: var(--shadow-md);
         }
 
-        .reader-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            max-width: 50%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
         .reader-progress-container {
             position: fixed;
             top: 0;
@@ -691,6 +753,7 @@
             z-index: 200;
             align-items: center;
             justify-content: center;
+            padding: 16px;
         }
 
         .modal-overlay.active {
@@ -700,7 +763,7 @@
         .modal {
             background: white;
             border-radius: var(--radius-xl);
-            width: 90%;
+            width: 100%;
             max-width: 520px;
             max-height: 90vh;
             overflow: hidden;
@@ -863,12 +926,6 @@
             margin-bottom: 20px;
         }
 
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
         .toast {
             position: fixed;
             bottom: 24px;
@@ -884,6 +941,8 @@
             opacity: 0;
             transition: all 0.3s ease;
             pointer-events: none;
+            max-width: 90vw;
+            text-align: center;
         }
 
         .toast.active {
@@ -927,23 +986,150 @@
             display: none !important;
         }
 
-        /* Mobile responsive */
+        /* Tablet */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: var(--sidebar-collapsed-width);
+                padding: 20px 12px;
+            }
+            .sidebar .brand-text,
+            .sidebar .brand-sub,
+            .sidebar .nav-title,
+            .sidebar .nav-item span:last-child,
+            .sidebar .add-category-btn span:last-child,
+            .sidebar .sidebar-footer span:last-child,
+            .sidebar .sidebar-toggle {
+                display: none;
+            }
+            .sidebar .nav-item,
+            .sidebar .add-category-btn {
+                justify-content: center;
+                padding: 10px;
+            }
+            .sidebar .nav-icon {
+                margin: 0;
+            }
+            .search-box {
+                width: 220px;
+            }
+        }
+
+        /* Mobile */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
-                left: -100%;
-                transition: left 0.3s ease;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: var(--sidebar-width);
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-lg);
+                padding: 20px 16px;
             }
             .sidebar.open {
-                left: 0;
+                transform: translateX(0);
             }
-            .bookshelf {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            .sidebar.open .brand-text,
+            .sidebar.open .brand-sub,
+            .sidebar.open .nav-title,
+            .sidebar.open .nav-item span:last-child,
+            .sidebar.open .add-category-btn span:last-child,
+            .sidebar.open .sidebar-footer span:last-child,
+            .sidebar.open .sidebar-toggle {
+                display: block;
             }
+            .sidebar.open .brand-text,
+            .sidebar.open .brand-sub {
+                display: block;
+            }
+            .sidebar.open .nav-item,
+            .sidebar.open .add-category-btn {
+                justify-content: flex-start;
+                padding: 10px 12px;
+            }
+            .sidebar.open .nav-icon {
+                margin-right: 10px;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            .top-bar {
+                height: auto;
+                min-height: 60px;
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .page-title {
+                font-size: 18px;
+            }
+
+            .top-actions {
+                width: 100%;
+                justify-content: flex-end;
+                order: 3;
+            }
+
             .search-box {
-                width: 180px;
+                width: 100%;
+                order: 2;
             }
-            .settings-grid {
+
+            .search-box input {
+                padding: 10px 14px 10px 38px;
+            }
+
+            .btn-primary span:first-child {
+                display: inline;
+            }
+
+            .view-area {
+                padding: 16px;
+            }
+
+            .bookshelf {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .book-cover {
+                height: 120px;
+            }
+
+            .book-info {
+                padding: 12px;
+            }
+
+            .book-title {
+                font-size: 13px;
+            }
+
+            .book-actions {
+                opacity: 1;
+            }
+
+            .reader-close-float {
+                top: 12px;
+                left: 12px;
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            .reader-content {
+                padding: 24px 0;
+            }
+
+            .reader-inner {
+                padding: 0 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bookshelf {
                 grid-template-columns: 1fr;
             }
         }
@@ -951,13 +1137,16 @@
 </head>
 <body>
     <div class="app-container">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="brand">
-                <div class="brand-icon">H</div>
-                <div>
-                    <div class="brand-text">HTML Reader</div>
-                    <div class="brand-sub">Elegant Reader</div>
+                <div class="brand-left">
+                    <div class="brand-icon">H</div>
+                    <div>
+                        <div class="brand-text">HTML Reader</div>
+                        <div class="brand-sub">Elegant Reader</div>
+                    </div>
                 </div>
+                <button class="sidebar-toggle" id="sidebarToggle" title="收起/展开">◀</button>
             </div>
 
             <div class="nav-section">
@@ -995,7 +1184,10 @@
 
         <main class="main-content">
             <header class="top-bar">
-                <h1 class="page-title" id="pageTitle">全部书籍</h1>
+                <div class="top-bar-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+                    <h1 class="page-title" id="pageTitle">全部书籍</h1>
+                </div>
                 <div class="top-actions">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
@@ -1127,7 +1319,7 @@
 
         // IndexedDB Setup
         const DB_NAME = 'HTMLReaderDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2;
         let db = null;
 
         function initDB() {
@@ -1150,6 +1342,9 @@
                     }
                     if (!database.objectStoreNames.contains('categories')) {
                         database.createObjectStore('categories', { keyPath: 'id' });
+                    }
+                    if (!database.objectStoreNames.contains('uiState')) {
+                        database.createObjectStore('uiState', { keyPath: 'key' });
                     }
                 };
             });
@@ -1241,10 +1436,13 @@
         const pageTitle = document.getElementById('pageTitle');
         const searchInput = document.getElementById('searchInput');
         const categoryList = document.getElementById('categoryList');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 
         // Rendering
         function renderBooks() {
-            let filtered = state.books;
+            let filtered = state.books.slice();
 
             if (state.currentFilter === 'recent') {
                 filtered = state.books.filter(b => b.lastReadAt).sort((a, b) => b.lastReadAt - a.lastReadAt);
@@ -1262,6 +1460,13 @@
                     getCategoryName(b.categoryId).toLowerCase().includes(q)
                 );
             }
+
+            // Sort: pinned first, then by updatedAt desc
+            filtered.sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return (b.updatedAt || 0) - (a.updatedAt || 0);
+            });
 
             if (filtered.length === 0) {
                 viewArea.innerHTML = `
@@ -1282,7 +1487,7 @@
                 const category = state.categories.find(c => c.id === book.categoryId) || state.categories[0];
                 const progress = book.progress || 0;
                 const card = document.createElement('div');
-                card.className = 'book-card';
+                card.className = 'book-card' + (book.pinned ? ' pinned' : '');
                 card.innerHTML = `
                     <div class="book-cover" style="background: linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%);">
                         <div class="book-cover-title">${escapeHtml(book.title || 'Untitled')}</div>
@@ -1300,8 +1505,10 @@
                         <div class="progress-text">${progress.toFixed(0)}% · 上次阅读 ${formatDate(book.lastReadAt)}</div>
                     </div>
                     <div class="book-actions">
-                        <button class="book-action-btn" onclick="event.stopPropagation(); editBookCategory('${book.id}')">🏷️</button>
-                        <button class="book-action-btn" onclick="event.stopPropagation(); deleteBook('${book.id}')">🗑️</button>
+                        <button class="book-action-btn ${book.pinned ? 'pinned' : ''}" onclick="event.stopPropagation(); togglePinBook('${book.id}')" title="${book.pinned ? '取消置顶' : '置顶'}">📌</button>
+                        <button class="book-action-btn" onclick="event.stopPropagation(); downloadBook('${book.id}')" title="下载">⬇️</button>
+                        <button class="book-action-btn" onclick="event.stopPropagation(); editBookCategory('${book.id}')" title="分类">🏷️</button>
+                        <button class="book-action-btn" onclick="event.stopPropagation(); deleteBook('${book.id}')" title="删除">🗑️</button>
                     </div>
                 `;
                 card.addEventListener('click', () => openReader(book.id));
@@ -1334,6 +1541,9 @@
                     pageTitle.textContent = escapeHtml(cat.name);
                     updateActiveNav();
                     renderBooks();
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('open');
+                    }
                 });
                 categoryList.appendChild(item);
             });
@@ -1354,7 +1564,6 @@
         async function deleteCategory(id) {
             if (!confirm('确定要删除这个分类吗？该分类下的书籍将移动到“未分类”。')) return;
             
-            // Update books in this category
             const booksInCategory = state.books.filter(b => b.categoryId === id);
             for (const book of booksInCategory) {
                 book.categoryId = 'uncategorized';
@@ -1362,7 +1571,6 @@
                 await dbPut('books', book);
             }
             
-            // Remove category
             state.categories = state.categories.filter(c => c.id !== id);
             await dbDelete('categories', id);
             
@@ -1377,8 +1585,7 @@
             renderBooks();
             showToast('分类已删除');
 
-            // Auto sync to GitHub
-            syncToGitHub();
+            syncToGitHub().catch(err => console.error('Sync after delete category failed:', err));
         }
 
         function updateActiveNav() {
@@ -1403,6 +1610,62 @@
             return div.innerHTML;
         }
 
+        // Sidebar toggle
+        let sidebarCollapsed = false;
+
+        async function loadUIState() {
+            try {
+                const saved = await dbGet('uiState', 'sidebar');
+                if (saved && saved.value) {
+                    sidebarCollapsed = saved.value.collapsed;
+                    applySidebarState();
+                }
+            } catch (e) {
+                console.log('No UI state saved');
+            }
+        }
+
+        function applySidebarState() {
+            if (window.innerWidth <= 1024) {
+                sidebar.classList.remove('collapsed');
+                sidebarToggle.style.display = 'none';
+                return;
+            }
+            sidebarToggle.style.display = 'flex';
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                sidebarToggle.textContent = '▶';
+                sidebarToggle.title = '展开';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebarToggle.textContent = '◀';
+                sidebarToggle.title = '收起';
+            }
+        }
+
+        sidebarToggle.addEventListener('click', async () => {
+            sidebarCollapsed = !sidebarCollapsed;
+            applySidebarState();
+            await dbPut('uiState', { key: 'sidebar', value: { collapsed: sidebarCollapsed } });
+        });
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        window.addEventListener('resize', () => {
+            applySidebarState();
+        });
+
+        // Close mobile sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
         // Navigation
         document.querySelectorAll('.nav-item[data-view="shelf"]').forEach(item => {
             item.addEventListener('click', () => {
@@ -1416,12 +1679,18 @@
                 }
                 updateActiveNav();
                 renderBooks();
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                }
             });
         });
 
         document.querySelector('.nav-item[data-view="settings"]').addEventListener('click', () => {
             document.getElementById('settingsModal').classList.add('active');
             loadSettingsForm();
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('open');
+            }
         });
 
         // Search
@@ -1487,7 +1756,7 @@
 
         function renderFileList() {
             fileList.innerHTML = '';
-            state.pendingFiles.forEach((file, index) => {
+            state.pendingFiles.forEach((file) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
                 item.innerHTML = `
@@ -1501,14 +1770,6 @@
         document.getElementById('confirmImport').addEventListener('click', async () => {
             if (state.pendingFiles.length === 0) {
                 showToast('请先选择 HTML 文件', 'error');
-                return;
-            }
-
-            if (!state.settings.githubToken) {
-                showToast('请先配置 GitHub Token', 'error');
-                importModal.classList.remove('active');
-                document.getElementById('settingsModal').classList.add('active');
-                loadSettingsForm();
                 return;
             }
 
@@ -1531,6 +1792,7 @@
                         categoryId,
                         progress: 0,
                         scrollPosition: 0,
+                        pinned: false,
                         createdAt: Date.now(),
                         updatedAt: Date.now(),
                         lastReadAt: null
@@ -1552,8 +1814,7 @@
             renderBooks();
             showToast(`成功导入 ${importedCount} 本书籍`);
 
-            // Auto sync to GitHub after import
-            syncToGitHub();
+            syncToGitHub().catch(err => console.error('Sync after import failed:', err));
         });
 
         function readFileAsText(file) {
@@ -1623,7 +1884,6 @@
             currentBookId = bookId;
             readerContainer.classList.add('active');
             
-            // Render content in sandboxed iframe for safety
             readerInner.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.sandbox = 'allow-same-origin';
@@ -1632,7 +1892,6 @@
             iframe.style.border = 'none';
             readerInner.appendChild(iframe);
 
-            // Inject content with base target to avoid navigation issues
             const blob = new Blob([book.content], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             iframe.src = url;
@@ -1642,7 +1901,6 @@
                     iframe.contentWindow.scrollTo(0, book.scrollPosition);
                 }
                 
-                // Track reading progress
                 const doc = iframe.contentDocument || iframe.contentWindow.document;
                 const updateProgress = () => {
                     const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
@@ -1653,11 +1911,10 @@
                     book.lastReadAt = Date.now();
                     document.getElementById('readerProgressBar').style.width = book.progress + '%';
                     
-                    // Auto-save progress every 5 seconds and sync to GitHub
                     if (window.saveProgressTimeout) clearTimeout(window.saveProgressTimeout);
                     window.saveProgressTimeout = setTimeout(() => {
                         dbPut('books', book);
-                        syncToGitHub();
+                        syncToGitHub().catch(err => console.error('Sync progress failed:', err));
                     }, 5000);
                 };
                 
@@ -1680,13 +1937,42 @@
         // Book Actions
         async function deleteBook(id) {
             if (!confirm('确定要删除这本书吗？')) return;
-            await dbDelete('books', id);
-            state.books = state.books.filter(b => b.id !== id);
-            renderBooks();
-            showToast('书籍已删除');
+            try {
+                await dbDelete('books', id);
+                state.books = state.books.filter(b => b.id !== id);
+                renderBooks();
+                showToast('书籍已删除');
+                await syncToGitHub();
+            } catch (err) {
+                console.error('Delete book error:', err);
+                showToast('删除失败: ' + err.message, 'error');
+            }
+        }
 
-            // Auto sync to GitHub after delete
-            syncToGitHub();
+        async function togglePinBook(id) {
+            const book = state.books.find(b => b.id === id);
+            if (!book) return;
+            book.pinned = !book.pinned;
+            book.updatedAt = Date.now();
+            await dbPut('books', book);
+            renderBooks();
+            showToast(book.pinned ? '已置顶' : '已取消置顶');
+            syncToGitHub().catch(err => console.error('Sync pin failed:', err));
+        }
+
+        function downloadBook(id) {
+            const book = state.books.find(b => b.id === id);
+            if (!book) return;
+            const blob = new Blob([book.content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (book.title || 'book') + '.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('开始下载');
         }
 
         async function editBookCategory(id) {
@@ -1697,11 +1983,6 @@
                 `<option value="${c.id}" ${c.id === book.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
             ).join('');
             
-            const select = document.createElement('select');
-            select.innerHTML = categoryOptions;
-            select.className = 'form-select';
-            select.style.marginBottom = '12px';
-            
             const modal = document.createElement('div');
             modal.className = 'modal-overlay active';
             modal.innerHTML = `
@@ -1710,7 +1991,9 @@
                         <div class="modal-title">选择分类</div>
                     </div>
                     <div class="modal-body">
-                        ${select.outerHTML}
+                        <select class="form-select" style="margin-bottom: 12px;">
+                            ${categoryOptions}
+                        </select>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
@@ -1730,9 +2013,7 @@
                 renderBooks();
                 modal.remove();
                 showToast('分类已更新');
-
-                // Auto sync to GitHub after category change
-                syncToGitHub();
+                syncToGitHub().catch(err => console.error('Sync category change failed:', err));
             });
         }
 
@@ -1755,10 +2036,6 @@
             document.getElementById('githubToken').value = state.settings.githubToken || '';
         }
 
-        function updateSyncStatus() {
-            // No-op: removed status indicator per user request
-        }
-
         // GitHub API Integration
         function getGitHubHeaders() {
             return {
@@ -1772,7 +2049,6 @@
             try {
                 const repoApiBase = `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`;
                 
-                // 1. List books directory
                 const listRes = await fetch(`${repoApiBase}/contents/books`);
                 if (!listRes.ok) {
                     if (listRes.status === 404) {
@@ -1785,7 +2061,6 @@
                 const files = await listRes.json();
                 const htmlFiles = files.filter(f => f.type === 'file' && (f.name.endsWith('.html') || f.name.endsWith('.htm')));
 
-                // 2. Try to load metadata for progress
                 let metaContent = null;
                 try {
                     const metaRes = await fetch(`${repoApiBase}/contents/reader-metadata.json`);
@@ -1807,6 +2082,9 @@
                 const bookMetas = metaContent && metaContent.books ? metaContent.books : [];
                 let loadedCount = 0;
 
+                // Build set of IDs from remote
+                const remoteIds = new Set();
+
                 for (const file of htmlFiles) {
                     const bookRes = await fetch(`${repoApiBase}/contents/books/${encodeURIComponent(file.name)}`);
                     if (!bookRes.ok) continue;
@@ -1815,6 +2093,7 @@
                     const title = extractTitle(content) || file.name.replace(/\.html?$/, '');
                     const description = extractDescription(content);
                     const id = file.name.replace(/\.html?$/, '');
+                    remoteIds.add(id);
                     const meta = bookMetas.find(b => b.id === id) || {};
                     
                     const existing = state.books.find(b => b.id === id);
@@ -1826,6 +2105,7 @@
                         existing.categoryId = meta.categoryId || existing.categoryId;
                         existing.progress = meta.progress || existing.progress || 0;
                         existing.scrollPosition = meta.scrollPosition || existing.scrollPosition || 0;
+                        existing.pinned = !!meta.pinned;
                         existing.updatedAt = Date.now();
                         await dbPut('books', existing);
                     } else {
@@ -1838,6 +2118,7 @@
                             categoryId: meta.categoryId || 'uncategorized',
                             progress: meta.progress || 0,
                             scrollPosition: meta.scrollPosition || 0,
+                            pinned: !!meta.pinned,
                             createdAt: meta.createdAt || Date.now(),
                             updatedAt: Date.now(),
                             lastReadAt: meta.lastReadAt || null
@@ -1847,6 +2128,13 @@
                     }
                     loadedCount++;
                 }
+
+                // Remove local books that no longer exist on GitHub
+                const localOnlyBooks = state.books.filter(b => !remoteIds.has(b.id));
+                for (const book of localOnlyBooks) {
+                    await dbDelete('books', book.id);
+                }
+                state.books = state.books.filter(b => remoteIds.has(b.id));
 
                 renderCategories();
                 renderBooks();
@@ -1859,23 +2147,19 @@
 
         async function syncToGitHub() {
             if (!state.settings.githubToken) {
-                showToast('请先配置 GitHub Token', 'error');
-                document.getElementById('settingsModal').classList.add('active');
-                loadSettingsForm();
+                showToast('未配置 GitHub Token，书籍只保存在本地浏览器', 'error');
                 return;
             }
 
             try {
-                // Get default branch
                 const repoRes = await fetch(
                     `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}`,
                     { headers: getGitHubHeaders() }
                 );
-                if (!repoRes.ok) throw new Error('无法访问仓库');
+                if (!repoRes.ok) throw new Error('无法访问仓库，请检查 Token');
                 const repoData = await repoRes.json();
                 const branch = repoData.default_branch || 'main';
 
-                // Get existing files in books directory to know what to delete
                 const listRes = await fetch(
                     `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books`,
                     { headers: getGitHubHeaders() }
@@ -1888,7 +2172,7 @@
                 for (const file of existingHtmlFiles) {
                     const fileId = file.name.replace(/\.html?$/, '');
                     if (!currentIds.has(fileId)) {
-                        await fetch(
+                        const deleteRes = await fetch(
                             `https://api.github.com/repos/${state.repo.owner}/${state.repo.name}/contents/books/${encodeURIComponent(file.name)}`,
                             {
                                 method: 'DELETE',
@@ -1900,6 +2184,9 @@
                                 })
                             }
                         );
+                        if (!deleteRes.ok) {
+                            console.error(`Failed to delete ${file.name}:`, deleteRes.status);
+                        }
                     }
                 }
 
@@ -1945,6 +2232,7 @@
                         categoryId: book.categoryId,
                         progress: book.progress,
                         scrollPosition: book.scrollPosition,
+                        pinned: !!book.pinned,
                         createdAt: book.createdAt,
                         updatedAt: book.updatedAt,
                         lastReadAt: book.lastReadAt
@@ -1989,6 +2277,7 @@
             } catch (err) {
                 console.error('Sync to GitHub error:', err);
                 showToast('同步失败: ' + err.message, 'error');
+                throw err;
             }
         }
 
@@ -1996,7 +2285,6 @@
         async function init() {
             await initDB();
             
-            // Load categories
             const savedCategories = await dbGetAll('categories');
             if (savedCategories.length > 0) {
                 state.categories = savedCategories;
@@ -2006,20 +2294,20 @@
                 }
             }
 
-            // Load books
             const savedBooks = await dbGetAll('books');
             state.books = savedBooks;
 
-            // Load settings
             const savedSettings = await dbGet('settings', 'config');
             if (savedSettings) {
                 state.settings = { ...state.settings, ...savedSettings.value };
             }
 
+            await loadUIState();
+            applySidebarState();
+
             renderCategories();
             renderBooks();
 
-            // Auto-sync from public GitHub repository on load
             syncFromGitHub();
         }
 
