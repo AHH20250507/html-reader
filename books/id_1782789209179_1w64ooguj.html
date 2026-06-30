@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>让思考上瘾</title>
+<style>
+:root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --text2: #3a3a3c;
+    --text3: #8e8e93;
+    --accent: #007aff;
+    --accent-bg: #e5f1ff;
+    --radius: 16px;
+    --header-height: 56px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top));
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.app-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: calc(var(--header-height) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding-left: 20px; padding-right: 16px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    z-index: 100;
+}
+.app-title { font-size: 1.1em; font-weight: 600; display: flex; align-items: center; gap: 6px;}
+.menu-btn {
+    width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; color: var(--accent);
+}
+.hero { padding: 30px 20px; text-align: center; }
+.hero h1 { font-size: 1.8em; font-weight: 700; margin-bottom: 8px; }
+.hero p { color: var(--text3); font-size: 1em; }
+
+.container { padding: 0 16px 40px; }
+.card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 24px 20px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.q-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.q-num { background: var(--accent-bg); color: var(--accent); font-size: 0.75em; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+.q-title { font-size: 1.3em; font-weight: 600; line-height: 1.4; margin-bottom: 16px; }
+.q-body { font-size: 1.05em; line-height: 1.6; color: var(--text2); margin-bottom: 24px; }
+.q-body img { width: 100%; border-radius: 10px; margin-bottom: 16px; display: block; }
+
+.reveal-btn {
+    width: 100%; background: var(--accent-bg); color: var(--accent);
+    border: none; padding: 14px; border-radius: 12px;
+    font-size: 0.95em; font-weight: 600;
+}
+.q-answer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f2f2f7; display: none; }
+.answer-label { font-size: 0.75em; font-weight: 600; color: var(--text3); text-transform: uppercase; margin-bottom: 12px; }
+.answer-text { font-size: 1em; line-height: 1.65; color: var(--text2); }
+
+/* Bottom Sheet Drawer */
+.drawer-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 1000;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.drawer-overlay.active { opacity: 1; pointer-events: auto; }
+.drawer {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: #fff; height: 85vh; border-radius: 20px 20px 0 0;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex; flex-direction: column;
+}
+.drawer-overlay.active .drawer { transform: translateY(0); }
+.drawer-header {
+    padding: 20px; border-bottom: 0.5px solid #eee;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.drawer-header h3 { font-size: 1.1em; font-weight: 600; }
+.drawer-close { font-size: 1.5em; color: var(--text3); border:none; background:none; }
+.drawer-list {
+    flex: 1; overflow-y: auto; padding: 10px 20px 40px;
+    -webkit-overflow-scrolling: touch;
+}
+.drawer-item {
+    display: flex; padding: 16px 0; border-bottom: 0.5px solid #f2f2f7;
+    text-decoration: none; color: var(--text);
+}
+.drawer-item:last-child { border-bottom: none; }
+.d-num { color: var(--accent); font-weight: 600; margin-right: 12px; font-size: 0.9em; width: 35px; }
+.d-title { flex: 1; font-size: 0.95em; line-height: 1.3; }
+
+/* Lightbox */
+.lightbox {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: #000; z-index: 2000;
+    display: none; align-items: center; justify-content: center;
+}
+.lightbox.active { display: flex; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lightbox-close { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; color: #fff; font-size: 2em; }
+</style>
+</head>
+<body>
+
+<div class="app-bar">
+    <div class="app-title">🧠 让思考上瘾</div>
+    <button class="menu-btn" onclick="openDrawer()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+</div>
+
+<div class="hero">
+    <h1>让思考上瘾</h1>
+    <p>50道精选逻辑思维训练题</p>
+</div>
+
+<div class="container">
+
+    <div class="card" id="mq1">
+        <div class="q-head"><span class="q-num">Q01</span></div>
+        <h2 class="q-title">能否质疑事实？</h2>
+        <div class="q-body">
+<img alt="Q01配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/5b08f1e7cfdf457baa4b02d32eb74882.png"/>
+        你的面前站着3个村民：1个是天使，1个是恶魔，1个是人类。<br/><br/>天使只说真话，恶魔只说假话，人类则有时说真话，有时说假话。<br/><br/>这3个村民（A，B，C）分别说道：<br/>A：我不是天使<br/>B：我不是恶魔<br/>C：我不是人类<br/><br/>请问A、B、C这3个村民分别是什么身份呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">“只说真话的天使”和“只说假话的恶魔”是逻辑推理中的经典设定。我们首先要通过发言始终一致的天使和恶魔的话进行判断。<br/><br/>如果A是天使，他说“我不是天使”是假话，矛盾，所以A不是天使；如果A是恶魔，他说“我不是天使”是真话，但这与恶魔只说假话矛盾，所以A也不是恶魔。因此，A只能是人类。<br/><br/>既然A是人类，B和C必定是天使和恶魔中的一个。假设B是天使，那么C是恶魔。此时B说“我不是恶魔”是真话，符合天使设定；C是恶魔，他说“我不是人类”也是真话，这与恶魔只说假话矛盾。所以，B只能是恶魔，C是天使。<br/><br/>验证：A人类（说真话/假话），B恶魔说“我不是恶魔”（假话），C天使说“我不是人类”（真话）。<br/><br/><b>答案</b>：A是人类，B是恶魔，C是天使。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq2">
+        <div class="q-head"><span class="q-num">Q02</span></div>
+        <h2 class="q-title">能否通过逻辑思维发现盲点？</h2>
+        <div class="q-body">
+<img alt="Q02配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/1c524238f2ab4f6e82443dc7c0060369.png"/>
+        3人在一起吃饭，他们分别是严先生、姜先生和唐先生。<br/><br/>其中1人注意到，3人手中分别拿着盐、姜汁和糖。<br/><br/>这个最初注意到此事并且手中刚好拿着盐的人说道：“没有人拿着和自己名字发音相同的调料！”<br/><br/>唐先生说：“给我点儿糖！”<br/><br/>请问姜先生手中拿的是什么调料？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">要想得出正确答案，必须弄清楚每句话都是谁说的。题中说“这个最初注意到此事并且手中刚好拿着盐的人说道”，这意味着首先唐先生和姜先生都不是这个拿盐的人。<br/><br/>另外，唐先生说了话，不仅说明唐先生没有拿盐，同时他要求“给我点儿糖”，也说明他手里没拿糖。所以唐先生拿的只能是姜汁。<br/><br/>既然唐先生拿的是姜汁，剩下的盐和糖就在严先生和姜先生手里。拿着盐的人说“没人拿着和自己名字发音相同的调料”，而严先生和“盐”发音相同，所以严先生不能拿盐，严先生只能拿糖。<br/><br/>最后剩下的姜先生拿的就是盐。<br/><br/><b>答案</b>：姜先生手中拿的是盐。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq3">
+        <div class="q-head"><span class="q-num">Q03</span></div>
+        <h2 class="q-title">能否仅凭单一线索找出思维真相？</h2>
+        <div class="q-body">
+<img alt="Q03配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/6476d91792cc46239301c9206ee3dd0a.png"/>
+        公司的钱被人贪污了。<br/><br/>员工A说：“犯人是B！”<br/><br/>员工B和C也对此事进行了发言。<br/><br/>我们不知道他们说了什么。<br/><br/>但已知条件是：犯人是A、B、C其中之一，且只有犯人说了真话。<br/><br/>犯人到底是谁呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">从已知事实中推导出更多信息。比如，这道题目有一个提示，“只有犯人说了真话”，由此可以逆向推断：不是犯人的人，说的都是假话。明确表达这些隐藏的线索，对于解题至关重要。<br/><br/>因为目前只知道A的发言内容，所以我们首先假设A是犯人，根据“只有犯人说了真话”这个条件，A所说的“犯人是B”应该是事实。但这样一来，就出现了有2个犯人的情况，与“犯人是A、B、C其中之一（即只有1个犯人）”的条件矛盾。因此，A不可能是犯人。<br/><br/>既然A不可能是犯人，他说的就是假话。也就是说，A所指认的“犯人是B”是不成立的。既然A不是犯人，B也不是犯人，所以犯人只能是C。<br/><br/><b>答案</b>：犯人是C。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq4">
+        <div class="q-head"><span class="q-num">Q04</span></div>
+        <h2 class="q-title">能否发现隐藏的线索？</h2>
+        <div class="q-body">
+<img alt="Q04配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/fc2c739dbfa840cd993c940e9be19b74.png"/>
+        A和B进行了10次猜拳游戏。<br/><br/>A出了3次石头、6次剪刀和1次布，B出了2次石头、4次剪刀和4次布。<br/><br/>2人从未出现平局。<br/><br/>过于投入的2人已经记不清自己出石头、剪刀和布的先后顺序了。<br/><br/>请问谁赢的局数更多呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">分析题中未明确给出的线索在所有已知条件中，有一条值得关注：2人从未出现平局。基于此，我们可以推导出一个重要信息——A和B的出拳每次都不同。<br/><br/>关注猜拳的次数。A出剪刀的次数（6次）刚好等于B出石头加布的总次数（2+4=6次）。既然没有平局，那么当A出这6次剪刀时，B出的必然是那2次石头和4次布。由此可以推导出，在这6个回合里，A（剪刀）输给了B（石头）2次，赢了B（布）4次，战绩是4胜2负。<br/><br/>现在，剩下的对局中B出了4次剪刀，这是已知条件。在这剩余的4场对局中，A出的只能是他剩下的3次石头和1次布。也就是说，A的3次石头赢了B的3次剪刀，A的1次布输给了B的1次剪刀。这部分战绩是3胜1负。<br/><br/>所以，A最终以7胜3负的战绩赢得了比赛。<br/><br/><b>答案</b>：A赢的局数更多。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq5">
+        <div class="q-head"><span class="q-num">Q05</span></div>
+        <h2 class="q-title">能否整合杂乱无章的思维线索？</h2>
+        <div class="q-body">
+<img alt="Q05配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/e1403a3ad02149d4b3a6ef82db4055df.png"/>
+        A、B、C、D、E、F、G这7个同事正在讨论今天是星期几。<br/><br/>A：后天是星期三。<br/>B：不，今天是星期三。<br/>C：不对，明天是星期三。<br/>D：今天既不是星期一，也不是星期二和星期三。<br/>E：昨天是星期四。<br/>F：明天才是星期四呢。<br/>G：昨天不是星期六。<br/><br/>7人之中，只有1人说的是真话。<br/><br/>请问今天是星期几？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">我们可以以“今天”为基准，对7个人的发言进行替换和整理。<br/>A：今天是星期一；<br/>B：今天是星期三；<br/>C：今天是星期二；<br/>D：今天是星期四、五、六、日中的一天；<br/>E：今天是星期五；<br/>F：今天是星期三；<br/>G：今天是星期一、二、三、四、五、六中的一天（因为昨天不是星期六，所以今天不是星期日）。<br/><br/>在重新整理条件后，我们会发现一星期中的大部分日子都被提及了至少2次。比如，假设“今天是星期一”是正确答案，那么A和G的发言都是正确的，这与已知条件“只有1人说真话”相矛盾。因此，凡是被覆盖或重复提及的日子，都可以被认为是错误答案。<br/><br/>经过排查，如果是星期四、星期五、星期六，D和G都会同时说真话。唯独如果今天是星期日，只有D一个人说的是真话（G说的是假话），完全符合题意。<br/><br/><b>答案</b>：今天是星期日。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq6">
+        <div class="q-head"><span class="q-num">Q06</span></div>
+        <h2 class="q-title">能否发现碎片信息中的思维线索？</h2>
+        <div class="q-body">
+<img alt="Q06配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/3d85c277845d4be6a12ce4e0751a15da.png"/>
+        全国销售技能大赛规定，每家企业必须派3名员工参赛。<br/><br/>某企业派出A、B、C参赛，其排名如下：<br/><br/>A：在所有参赛者中刚好排正中间<br/>B：第19名，比A的名次低<br/>C：第28名<br/><br/>请问一共有多少家企业参加了比赛？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">首先，A在所有参赛者中刚好位列正中间，说明参赛总人数一定是奇数。此外，根据“每家企业必须派3名员工参赛”，参赛总人数需同时满足是奇数且能被3整除这两个条件。<br/><br/>接下来，因为B排第19名，比A的名次低，所以A所在的正中间位置一定在第19名之前。这意味着参赛总人数最多不超过35人（因为如果总人数是35，中间名次是18，B的19名依然比A低；如果总人数是37，中间名次是19，就和B的名次重合了）。<br/><br/>最后，C排第28名，说明总人数至少为28。介于28和35之间，且是奇数、又能被3整除的数字，只有33。<br/><br/>参赛总人数为33人。根据每家企业3名员工，可以得知参赛企业共有11家。<br/><br/><b>答案</b>：参赛企业一共有11家。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq7">
+        <div class="q-head"><span class="q-num">Q07</span></div>
+        <h2 class="q-title">能否发现解题的切入点？</h2>
+        <div class="q-body">
+<img alt="Q07配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/f4f1a12ac0154708bcb656434d5b7255.png"/>
+        A、B、C3人在泡完温泉后，依次进行了乒乓球单打比赛。<br/><br/>比赛规则如下：<br/>·获胜者将继续参加下一场比赛。<br/>·失败者将被候补者替换，不能参加下一场比赛。<br/>·候补者也是3人之一，而不是其他人。<br/><br/>比赛结束后，A、B、C的比赛场数如下：<br/>A：10场　B：15场　C：17场<br/><br/>请问第2场比赛谁输了？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">目前已知的线索只有3人各自的比赛场数。3人比赛场数合计为10+15+17=42。因为每场比赛会有2人参加，因此实际上一共打了42÷2=21场比赛。<br/><br/>假设参赛者如果从第1场比赛开始一路输到底（上一场输，休息一场，下一场再输），在21场总比赛中，他最多可以参加11场比赛（即参加第1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21场）；如果他从第2场比赛开始参加且每场都输，那么他最多只能参加10场比赛（即参加第2, 4, 6, 8, 10, 12, 14, 16, 18, 20场）。理论上可能的最少比赛场数就是10场。<br/><br/>已知条件中A刚好只参加了10场比赛，这说明她每场比赛都是输的。既然A的参赛场数为10场，说明她必然是从第2场比赛开始参赛，并且从第2场比赛开始，每逢上场就必输。<br/><br/><b>答案</b>：第2场比赛A输了。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq8">
+        <div class="q-head"><span class="q-num">Q08</span></div>
+        <h2 class="q-title">能否推理出更深一层思维的真相？</h2>
+        <div class="q-body">
+<img alt="Q08配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/6c8492ec10cc4edeab17b50896e3550d.png"/>
+        你站在分岔路前，其中1条通往天堂，另1条通往地狱。<br/><br/>路口站着2个门卫，他们分别是“总是说真话的天使”和“总是说假话的恶魔”，但你无法从外表分辨他们的身份。<br/><br/>你只能向其中1人提出1个仅能用“是”或“不是”回答的问题。<br/><br/>如何提问才能找出通往天堂的路呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题的关键在于运用“双重提问”技巧。具体而言，我们需要问对方一个这样的问题：“如果我问你（某个问题），你会回答（某个答案）吗？”这种方法巧妙地绕开了对方身份的不确定性，使得无论对方是天使还是恶魔，都只能给出完全相同的答案。<br/><br/>具体做法是：指着其中一条路，向任意一位门卫提问：“如果我问你‘这条路是否通往天堂’，你会回答‘是’吗？”<br/><br/>如果对方是恶魔：<br/>如果这条路确实通往天堂，你单问恶魔“这条路是否通往天堂”，他本应回答“否”。但是因为你的问题是“你会回答‘是’吗？”，他需要对“我会回答‘否’”这件事再撒一次谎，负负得正，所以他最终的回答是“是”。<br/>如果这条路通往地狱，同理，他最终会回答“否”。<br/><br/>你会发现，无论对方是天使还是恶魔，只要这条路通往天堂，他们的回答必定都是“是”；如果通往地狱，回答必定都是“否”。<br/><br/><b>答案</b>：指着其中一条路问任意门卫：“如果我问你‘这条路是否通往天堂’，你会回答‘是’吗？”如果回答是，就走这条路；如果回答否，就走另一条路。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq9">
+        <div class="q-head"><span class="q-num">Q09</span></div>
+        <h2 class="q-title">能否把问题抽象化？</h2>
+        <div class="q-body">
+<img alt="Q09配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/e6c46acf8721498c9503732a2bfaf08f.png"/>
+        A和B头戴帽子，面对面而坐。<br/><br/>2人看不见自己帽子的颜色，但可以看到对方的帽子。<br/><br/>2人帽子的颜色可能分别是红色或蓝色，也可能都是红色或蓝色。<br/><br/>2人需要同时答出自己帽子的颜色，并且至少有1人必须答对。<br/><br/>等2人戴上帽子、面对面而坐以后，无法相互交流；但在此之前，他们可以讨论并商量策略。<br/><br/>为了至少有1人答对，他们应该怎么商议策略呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题的核心思路在于，将问题简化为2人对应2种互斥的组合模式。<br/><br/>如果A和B帽子的颜色不相同（一红一蓝）：如果A回答“我与B的帽子颜色相同”，必定回答错误；而此时B如果回答“我与A的帽子颜色不同”，则必定回答正确。此时B对A错，满足要求。<br/><br/>如果A和B戴的都是同色帽子（比如都是红帽子）：如果A回答“我与B的帽子颜色相同”，必定回答正确；而此时B如果回答“我与A的帽子颜色不同”，则必定回答错误。此时A对B错，同样满足要求。<br/><br/><b>答案</b>：在戴帽子之前互相通气，约定好：1人回答与对方帽子相同的颜色；另1人回答与对方帽子不同的颜色。这样无论如何，必然有一人能够答对。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq10">
+        <div class="q-head"><span class="q-num">Q10</span></div>
+        <h2 class="q-title">能否将多种可能性进行简化？</h2>
+        <div class="q-body">
+<img alt="Q10配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/3fa918fcc86b41daa1c3e3ecfd51b1db.png"/>
+        A、B、C戴着帽子围坐成一圈。<br/><br/>他们看不见自己帽子的颜色，但可以看到其他人的帽子，并且他们之间不可以互相交流。<br/><br/>帽子的颜色共有3种：红色、蓝色和白色。<br/><br/>各颜色帽子的具体数量不等：也许3人帽子的颜色都一样，也许3人帽子的颜色各不相同。<br/><br/>3人需要同时答出自己帽子的颜色，且3人中至少有1人必须答对。<br/><br/>和上一道题的情况一样，他们被允许在戴上帽子之前进行商议。<br/><br/>3人应该怎么商议策略呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">将帽子的颜色抽象为数字。用以下数字来替代帽子的颜色：红色=0，蓝色=1，白色=2。无论3人的帽子是什么颜色，把三个人的数值加起来除以3之后，余数只有3种可能：0、1或2。<br/><br/>让A、B、C三人提前约定好，各自“认领”一种余数情况：<br/>A：假设帽子总和除以3的余数为0，结合看到的颜色，逆推自己帽子的颜色。<br/>B：假设帽子总和除以3的余数为1，结合看到的颜色，逆推自己帽子的颜色。<br/>C：假设帽子总和除以3的余数为2，结合看到的颜色，逆推自己帽子的颜色。<br/><br/>因为实际帽子颜色的总和除以3的余数必定是这三种情况之一，所以这三人中负责“认领”到正确余数的那个人，逆推出来的自己帽子颜色必定是正确的。<br/><br/><b>答案</b>：将红蓝白设为0、1、2。三人提前约定，各自假设三人颜色总和除以3的余数分别是0、1、2，并以此推算出自己帽子的颜色进行回答。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq11">
+        <div class="q-head"><span class="q-num">Q11</span></div>
+        <h2 class="q-title">能否破解高难度的逻辑思维问题？</h2>
+        <div class="q-body">
+<img alt="Q11配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/f45cee0bee0f418bb6110f141805de88.png"/>
+        前方摆放着5个盒子，盒子上分别标有数字1到5。<br/><br/>这些盒子按照1、2、3、4、5的顺序排列成一行。<br/><br/>其中某个盒子里藏着1只猫。<br/><br/>夜幕降临后，猫会从当前的盒子移动到旁边的盒子里。<br/><br/>到了早上，你只能检查其中的1个盒子，确认猫是否在那里。<br/><br/>请问按照怎样的开盒顺序，可以最有效地找到猫？<br/><br/>以及按照这个顺序，最迟第几天找到猫？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">我们可以将盒子分为奇数（1,3,5）和偶数（2,4）。如果猫第一天在偶数盒子里，我们按顺序检查2、3、4。如果猫是从2到3，或者从4到3，在这个地毯式推进的过程中必然会被堵住。如果在第3天检查4号盒子还是没找到，说明第一天猫根本不在偶数盒子里！<br/><br/>没关系，因为此时（第四天开始前），原本在奇数盒子里的猫经过了3次移动，奇变偶，偶变奇，奇再变偶。也就是说，第四天的时候，猫必然在偶数盒子里！<br/><br/>此时我们只需要再重新按偶数盒子的策略查一遍：依次检查 4号、3号、2号（或2号、3号、4号）即可。<br/><br/>完整的检查顺序是：2、3、4、4、3、2。按这个顺序，不管猫怎么走，最迟在第6天必定能找到猫。<br/><br/><b>答案</b>：开盒顺序为 2→3→4→4→3→2，最迟第6天能找到猫。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq12">
+        <div class="q-head"><span class="q-num">Q12</span></div>
+        <h2 class="q-title">能否将逻辑思维能力发挥到极致？</h2>
+        <div class="q-body">
+<img alt="Q12配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/ba179ea67449484293dc4a72e815e609.png"/>
+        你的面前有2道阶梯，1道通往天堂，1道通往地狱。<br/><br/>阶梯前站着3个门卫，分别是总是说真话的天使、总是说假话的恶魔和有时说真话有时说假话的人类，但从外表上看，3人是无法区分的。<br/><br/>你有2次提问机会，可以向其中任何1个门卫提问，但他只能回答“是”或“否”。<br/><br/>另外，门卫们知道彼此的真实身份。<br/><br/>如何提问才能找到通往天堂的阶梯呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题的难点在于“人类”的存在，因为他太随机了。我们有2次提问机会，所以第1次提问必须确定“谁绝对不是人类”。<br/><br/>我们将3个门卫分别称为A、B、C。向A提问：“如果我问你‘B是人类吗’，你会回答‘是’吗？”<br/>无论A是天使还是恶魔，如果他回答“是”，则说明B是人类，那么C必然不是人类；如果他回答“否”，则说明B不是人类。如果A本身就是人类，那么他的回答不管是啥，我们直接去向结果指向的那个“非人类”提问也是安全的（因为如果A是人类，那么B和C必然都不是人类）。<br/><br/>这样，通过第1次提问，我们就锁定了一个绝对不是人类的门卫（B或C）。<br/><br/>第2次提问，向这个确定非人类的门卫（天使或恶魔），利用双重提问技巧指向任意一道阶梯：“如果我问你‘这道阶梯是否通往天堂’，你会回答‘是’吗？”如果回答是“是”，这条阶梯就通往天堂；如果回答“否”，则另一条阶梯通往天堂。<br/><br/><b>答案</b>：第1次问A：“如果我问你‘B是人类吗’，你会回答‘是’吗？”若A答“是”则排除B去找C，若答“否”则找B。第2次向确认非人类的那位指着阶梯问：“如果我问你‘这道阶梯是否通往天堂’，你会回答‘是’吗？”</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq13">
+        <div class="q-head"><span class="q-num">Q13</span></div>
+        <h2 class="q-title">能否质疑事实？</h2>
+        <div class="q-body">
+<img alt="Q13配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/e12f677822fb480397b8203747593dd6.png"/>
+        你和2个同事一起住酒店，住宿费是每人1万日元，一共交给前台3万日元。<br/><br/>但是后来前台意识到，如果3人一起住，住宿费应该是2.5万日元，所以要退还5000日元。<br/><br/>但是前台觉得5000日元无法平均分配给3人，于是将2000日元装进了自己的腰包，仅退还给3人3000日元。<br/><br/>3人一共支付了3万日元，又收到了3000日元退款，所以3人总共支付了2.7万日元。<br/><br/>再加上前台私吞的2000日元，一共是2.9万日元。<br/><br/>那么剩下的1000日元去哪里了呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题的关键点在于“加上前台私吞的2000日元，总共是2.9万日元”。这句话在偷换概念，需要特别注意。3人最终支付的2.7万日元里，其实已经包含了“正常住宿费2.5万日元”加上“前台私吞的2000日元”。<br/><br/>也就是说，不能用“2.7万日元加上2000日元等于2.9万日元”这种荒谬的算法。正确的等式应该是“3人最终支出的2.7万 = 酒店收取的2.5万 + 前台私吞的0.2万”。<br/><br/>1000日元只是在字面逻辑游戏上消失了，实际并没有丢失任何钱。<br/><br/><b>答案</b>：1000日元并没有消失，是题目的计算逻辑存在偷换概念的陷阱。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq14">
+        <div class="q-head"><span class="q-num">Q14</span></div>
+        <h2 class="q-title">能否不假思索，脱口而出？</h2>
+        <div class="q-body">
+<img alt="Q14配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/7e27400746284604825b5bde1053f2ed.png"/>
+        A在看B，B在看C。<br/><br/>A已经结婚，而C是单身。<br/><br/>根据这个情景，我们来分析一下："有个已婚的人在看单身的人"这句话是否成立？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">我们似乎无法确定“有个已婚的人在看单身的人”这句话是否成立，因为我们不知道中间人B的婚姻状态。但其实无论B的婚姻状态如何，我们都可以通过枚举验证得出结论。<br/><br/>如果B是已婚：B（已婚）在看C（单身）。此时符合“有个已婚的人在看单身的人”。<br/>如果B是单身：A（已婚）在看B（单身）。此时依然符合“有个已婚的人在看单身的人”。<br/><br/>因此，无论B是否结婚，“有个已婚的人在看单身的人”这句话都是必然成立的。<br/><br/><b>答案</b>：这句话是成立的。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq15">
+        <div class="q-head"><span class="q-num">Q15</span></div>
+        <h2 class="q-title">能否识破直觉的陷阱？</h2>
+        <div class="q-body">
+<img alt="Q15配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/158234cbf366447d972e634037900f48.png"/>
+        第1次赛跑你输了。<br/><br/>当对手到达终点的那一刻，你离终点尚有10米之遥。<br/><br/>于是在第2场比赛开始前，为了配合你的速度，你的对手被安排在起跑线后10米的地方起跑。<br/><br/>谁将在第2场比赛中获胜？<br/><br/>注：此题假设在两场比赛中你和对手的速度都是恒定的。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">从第1场比赛中可以得知：对手跑完100米的时间 = 你跑完90米的时间。<br/><br/>第2场比赛中，对手从起跑线后退了10米。也就是说，当你的对手跑了100米（刚好到达原起跑线100米处，即跑到90米标记处）的时候，你刚好也跑完了90米。此时，你们2人与终点的距离都还剩下10米，处于并驾齐驱的状态。<br/><br/>但是，在剩下的最后10米中，由于对手的速度比你快，所以对手会再次超过你，率先到达终点。<br/><br/><b>答案</b>：你的对手将在第2场比赛中获胜。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq16">
+        <div class="q-head"><span class="q-num">Q16</span></div>
+        <h2 class="q-title">能否放弃先入为主的直觉？</h2>
+        <div class="q-body">
+<img alt="Q16配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/69150c8b3dd94220b5dadab79a12c6fb.png"/>
+        有A和B两座机场。<br/><br/>现在，你乘坐飞机从A机场出发去B机场，并从B机场返回A机场。<br/><br/>与无风的时候相比，如果“风总是从A机场吹向B机场”，那么飞机的往返时间将会如何变化呢？<br/><br/>请做出你的选择：①往返时间不变  ②往返时间比无风的时候长  ③往返时间比无风的时候短<br/><br/>注：此题假设飞机的巡航速度和风速都是恒定的。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题解题的关键点在于逆风阶段所耗费的额外时间。“去程早到的时间和返程晚到的时间是相等的”这个直觉本身就是一个陷阱。<br/><br/>我们可以做个假设：A机场和B机场之间的距离为600公里，无风时飞机的速度为200公里/小时。无风时往返时间为3+3=6小时。<br/>当有100公里/小时的风速时：<br/>去程（顺风）：速度变为300公里/小时，耗时 600÷300=2小时。<br/>回程（逆风）：速度变为100公里/小时，耗时 600÷100=6小时。<br/>往返总耗时为 2+6=8小时。<br/><br/>虽然顺风能缩短去程的时间，但飞机在逆风路段因为速度变慢而待的时间更久，被耽误的时间远远多于顺风省下的时间。<br/><br/><b>答案</b>：②往返时间比无风的时候长。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq17">
+        <div class="q-head"><span class="q-num">Q17</span></div>
+        <h2 class="q-title">能否注意到思考的盲点？</h2>
+        <div class="q-body">
+<img alt="Q17配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/3e0162807d2d450ab287c2e57261c11c.png"/>
+        从日本前往澳大利亚的船只，每天中午12点都会准时出航。<br/><br/>同时，从澳大利亚前往日本的船只也会出发。<br/><br/>两船航程用时都是7天7夜。<br/><br/>那么，一艘今天从日本出发的船，在到达澳大利亚之前，会与前往日本的船相遇几次呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">很容易掉入只考虑“即将出发”的船只的陷阱。其实，从日本出发的船，不仅会与“接下来几天出发的船”相遇，还会与“过去7天内从澳大利亚出发、目前仍在海上航行”的船相遇。<br/><br/>具体情况如下：<br/>·船从日本港口出发的这一刻，刚好会与7天前从澳大利亚出发、此时刚到达日本的1艘船相遇。<br/>·船在海上航行的7天内，会遇到过去7天内陆续出发的船，以及未来几天出发的船，每天中午和半夜各一艘，中间过程共计13艘。<br/>·船在抵达澳大利亚港口的那一刻，又会与刚好即将出发的1艘船相遇。<br/><br/>合计相遇次数为：1 + 13 + 1 = 15。<br/><br/><b>答案</b>：会相遇15次（即遇到15艘船）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq18">
+        <div class="q-head"><span class="q-num">Q18</span></div>
+        <h2 class="q-title">能否识破百分比的陷阱？</h2>
+        <div class="q-body">
+<img alt="Q18配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/fa9432ae7f2c46c3bdf0db08abf7848f.png"/>
+        某工厂生产了200件产品。<br/><br/>然而，工厂发现其中99%是次品，于是想设法把次品拿走，让工厂剩余的次品率降至98%。<br/><br/>需要拿走几件次品呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">200件产品中，有198件是次品，2件是合格品。如果仅凭直觉拿走2件次品，次品变196件，总数变198件，次品率约是98.98%，并没有达到目标。<br/><br/>正确的方法是换个角度思考：关注那些数量没有发生变化的“合格品”。<br/>这2件合格品在拿走次品后，必须占剩余总产品数量的2%（因为次品率要降至98%）。<br/>既然2件合格品占2%，那么新的总产品数量应该是 2 ÷ 2% = 100 件。<br/><br/>为了让总数从200件变成100件，并且合格品数量没动，我们必须拿走100件次品。<br/><br/><b>答案</b>：需要拿走100件次品。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq19">
+        <div class="q-head"><span class="q-num">Q19</span></div>
+        <h2 class="q-title">能否使用视觉思维？</h2>
+        <div class="q-body">
+<img alt="Q19配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/3966d56fffbf4ba6af756d055dd63a7e.png"/>
+        某国的父母都想生女孩，每个家庭在女孩出生之前都会持续生育，一旦有女孩出生就会停止生育。<br/><br/>请问该国男孩和女孩的数量比是多少？<br/><br/>注：此题假设该国的父母每次只生育一个孩子，且生育男孩和女孩的概率分别为50%。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">由于每个家庭最终都会有1个女孩而且只有1个女孩，很多人会直觉认为女孩更多。但我们可以把问题简化。<br/><br/>假设这个国家的家庭总数量是16。第1胎，一半生男，一半生女（8个男孩，8个女孩），生女孩的家庭停止生育。<br/>剩下的8个家庭生第2胎，依然是一半生男，一半生女（4个男孩，4个女孩）。<br/>剩下的4个家庭生第3胎，一半生男一半生女（2个男孩，2个女孩）...以此类推。<br/><br/>将所有轮次的男孩和女孩数量相加，由于每一轮生下男孩和女孩的概率始终都是各自占50%，最终出生的男女总数量也是完全相等的。<br/><br/><b>答案</b>：该国男孩和女孩的数量比是1：1。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq20">
+        <div class="q-head"><span class="q-num">Q20</span></div>
+        <h2 class="q-title">能否识破数字的陷阱？</h2>
+        <div class="q-body">
+<img alt="Q20配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/2e987c440df34c3ebdc431d24fdc8f07.png"/>
+        上司提供了2种加薪方案供你选择：<br/>方案A：每年加薪一次，每次加10万日元，每年一次性支付一年的薪水。<br/>方案B：每半年加薪一次，每次加薪3万日元，每半年一次性支付半年的薪水。<br/>你认为选择哪个方案对自己更有利？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">为了便于计算，我们先假设你的年薪起薪是1000万日元（即半年薪500万日元）。<br/><br/>选择方案A (每年发一次)：<br/>第1年：1000万日元<br/>第2年：1010万日元<br/>第3年：1020万日元<br/><br/>选择方案B (每半年发一次)：<br/>第1年上半年：500万日元；下半年加薪3万，变503万日元。第一年合计 1003万日元。<br/>第2年上半年：506万日元；下半年：509万日元。第二年合计 1015万日元。<br/>第3年上半年：512万日元；下半年：515万日元。第三年合计 1027万日元。<br/><br/>方案B的加薪频率更高！到了第2年下半年，方案B的基数已经加了三次3万，而方案A的基数才加了一次10万。累积起来，高频次的加薪使得方案B能让你更快地拿到更高的薪水。<br/><br/><b>答案</b>：选择方案B对自己更有利。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq21">
+        <div class="q-head"><span class="q-num">Q21</span></div>
+        <h2 class="q-title">能否识破概率的陷阱？</h2>
+        <div class="q-body">
+<img alt="Q21配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/25d5860b1306402a867e72806ab6b4c8.png"/>
+        盒子里原来有一个黑球或白球，向这个盒子里追加一个白球并摇匀后，从盒子中取出一个球，结果是白色的。<br/><br/>现在要猜出盒子里剩下的球的颜色，你觉得是哪种颜色呢？<br/><br/>这种颜色的概率有多少呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">起初盒子里有两种可能：情况1：里面原本是1个白球（记为白1）。情况2：里面原本是1个黑球（记为黑1）。<br/><br/>现在加入1个白球（记为白2）。此时，如果是情况1，盒子里有【白1，白2】；如果是情况2，盒子里有【黑1，白2】。<br/><br/>我们从中取出1个球，发现是白球。那么这个取出的白球可能是情况1中的白1，可能是情况1中的白2，也可能是情况2中的白2。这构成了目前所有可能的“白球被抽出”的情况，共有3种等可能情况。<br/><br/>在这3种情况中，只有前2种情况（原本是白球的情况），盒子里剩下的球才是白球。<br/><br/>因此，剩下的球是白球的概率是 2/3。<br/><br/><b>答案</b>：剩下的球是白色的，概率约是66.7%（2/3）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq22">
+        <div class="q-head"><span class="q-num">Q22</span></div>
+        <h2 class="q-title">能否发现隐藏的思维可能性？</h2>
+        <div class="q-body">
+<img alt="Q22配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/9f22e5a5f5ae4b38a47a45d53fa4a860.png"/>
+        在你面前有3张卡片：第1张卡片两面都是黑色。<br/><br/>第2张卡片两面都是白色。<br/><br/>第3张卡片一面是黑色，另一面是白色。<br/><br/>将3张卡片放进盒子里，然后随机取出1张卡片，发现这张卡片的朝上的一面为白色。<br/><br/>这张卡片的另一面也是白色的概率是多少？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题和上一题同理。抽出的卡片是一张“有一面是白色”的卡片。<br/>但需要注意的是，每张卡片并没有固定的正反面。抽到的卡片朝上的白色面可能出现的情况有3种等可能情况：第2张（白-白）的A面，第2张（白-白）的B面，以及第3张（黑-白）的白色面。<br/><br/>在这三种情况中，只有前两种情况（抽到第2张卡片时），卡片的另一面依然是白色。因此，另一面是白色的概率为 2/3。<br/><br/><b>答案</b>：概率是 2/3（约66.7%）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq23">
+        <div class="q-head"><span class="q-num">Q23</span></div>
+        <h2 class="q-title">能否考虑到所有情况？</h2>
+        <div class="q-body">
+<img alt="Q23配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/2da694bc55a74146b0d31269f85a7cad.png"/>
+        一共有25匹赛马，你需要通过比赛找出速度最快的3匹马。<br/><br/>然而，每场比赛最多只能安排5匹马参赛。<br/><br/>由于无法测量具体时间，只能通过目测判断，如“A比B快”。<br/><br/>那么要想找到速度最快的3匹马，最少需要进行多少场比赛呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">首先，将25匹马分成5组，每组5匹进行比赛，进行 5 场比赛。这能淘汰每组的第四和第五名，留下15匹有潜力的马。<br/><br/>第6场比赛：让这5组的第1名（A1, B1, C1, D1, E1）跑一场。这场比赛不仅能决出所有马中跑得最快的那匹（假设是A1），还能给这5个组进行宏观排名。<br/><br/>假设第6场的名次是 A1 > B1 > C1 > D1 > E1。那么D组和E组全军覆没（因为连D1和E1都进不了前三）。同时，C组只有C1有资格争夺第三，B组只有B1和B2有资格争夺二三名，A组A1已经是绝对的第一，而A2、A3可以争夺剩余的名额。<br/><br/>这就把潜在的候选马缩小到了：A2, A3, B1, B2, C1 这 5 匹。<br/>第7场比赛：让这5匹马跑一场，决出跑得最快的前两名，加上稳居第一的A1，就是总体速度最快的3匹马。<br/><br/><b>答案</b>：最少需要进行 7 场比赛。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq24">
+        <div class="q-head"><span class="q-num">Q24</span></div>
+        <h2 class="q-title">能否识破隐藏在证明中的陷阱？</h2>
+        <div class="q-body">
+<img alt="Q24配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/0b5e709ff43a4214819d01eed34acdaa.png"/>
+        在你面前有4张卡片，分别写着“E”“R”“2”“9”，且每张卡片都有一面是字母，一面是数字。<br/><br/>现在想要确认“元音（A、E、I、O、U）卡片的另一面一定是偶数”这一规律是否成立，在只能翻开2张卡片的情况下，应该选择哪2张呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">要确认“元音卡片的另一面一定是偶数”是否成立，翻开元音卡片E是必然的。这是正面验证。<br/><br/>很多人觉得翻开偶数卡片2也能证明，但即使偶数卡片的另一面是辅音，也不会影响“元音卡片的另一面一定是偶数”这一规律的正确性。<br/><br/>反之，根据逆否命题的原理：奇数卡片的另一面如果出现了元音，那么这条规律就会被彻底打破。因此，为了防止反例的出现，必须翻开奇数卡片9进行检查。<br/><br/><b>答案</b>：应该翻开卡片 E 和卡片 9。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq25">
+        <div class="q-head"><span class="q-num">Q25</span></div>
+        <h2 class="q-title">能否识破精心设计的思维圈套？</h2>
+        <div class="q-body">
+<img alt="Q25配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/1be0c0455f9d47708500afe12ad1541f.png"/>
+        A、B、C3人参加选举，获得的票数完全相同。<br/><br/>于是，选举方决定重新投票，并要求投票者选出自己心目中的第2候选人。<br/><br/>然而，即使加上第2轮的得票，3人的票数仍然相同，依旧无法决出胜负。<br/><br/>由于总投票人数是奇数，A意识到如果采用两两对决的方式，最终一定能分出胜负。<br/><br/>于是，他提议先在B和C之间进行一轮投票，胜者再与自己最终对决。<br/><br/>然而，B对此提出反对意见，认为在这样的赛制下，A比B和C拥有更高的获胜概率。<br/><br/>你认同B的看法吗？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这是一个经典的孔多塞悖论现象。当三人的支持率出现循环相克时（即如果两两对决，多数人认为A胜过B，B胜过C，而C又胜过A，宛如石头剪刀布），先后顺序就会成为决定胜负的关键。<br/><br/>在循环相克中，如果先安排B和C对决，不管谁赢（假设B赢了），最后都是A来对付赢家。此时A天然克制B，所以A必胜；如果C赢了，A也可能被C克制而输，但因为规则是A自己制定的，他一定是算准了当前的投票局势（也就是A克制胜出者）。这在多方博弈中，作为“后手”或“以逸待劳”的一方往往占尽便宜。<br/><br/>因此，A的赛制提议暗藏玄机，B的反对意见是非常合理的。<br/><br/><b>答案</b>：认同。因为在循环相克局面下，最后加入对决的A确实拥有极高的获胜概率。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq26">
+        <div class="q-head"><span class="q-num">Q26</span></div>
+        <h2 class="q-title">能否摒弃先入为主的思维观念？</h2>
+        <div class="q-body">
+<img alt="Q26配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/f23a2df0a204405c82b302b37963d863.png"/>
+        这里有2炷香，每炷香都刚好会在1小时后燃尽。<br/><br/>香燃烧的速度并不均匀，90%的部分可能在10分钟内就燃烧完毕，但剩下的10%可能需要50分钟才能燃尽。<br/><br/>现在想通过这2炷香来计时45分钟。<br/><br/>该怎么做呢？<br/><br/>注：图中香的燃烧速度仅作示意参考。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">突破“香只能从一端点燃”的思维定式，是解题关键。<br/><br/>具体步骤如下：<br/>点燃第1炷香的两端，同时点燃第2炷香的一端。由于第1炷香从两端燃烧，不论燃烧速度多不均匀，它必定会在刚好30分钟时燃尽。<br/>当第1炷香燃尽的这一刻（正好过去了30分钟），将正在燃烧的第2炷香的另一端也点燃，使其成为两端都点燃的状态。由于第2炷香还剩30分钟的整体燃烧时间，双端点燃后，它将在剩下的15分钟内燃尽。<br/><br/>30分钟 + 15分钟，正好能够测量出45分钟。<br/><br/><b>答案</b>：同时点燃第1炷香的两端和第2炷香的一端；等第1炷香燃尽时，立刻点燃第2炷香的另一端，等其燃尽时即为45分钟。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq27">
+        <div class="q-head"><span class="q-num">Q27</span></div>
+        <h2 class="q-title">能否灵活思考问题？</h2>
+        <div class="q-body">
+<img alt="Q27配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/39934c06edb840dfa4f36a33ab8b44e7.png"/>
+        一位学者在野外搭帐篷，突然遇到一只熊。<br/><br/>他惊慌逃跑，先是向南跑了10公里，又向东跑了10公里，最后还向北跑了10公里。<br/><br/>这时候，他发现自己回到了自己原先搭帐篷的位置。<br/><br/>请问学者遇到的那头熊是什么颜色的？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">先后向南、向东、向北跑了10公里，最终竟然回到了原来的位置。这在平面几何上是不可能的。这是因为地球并非平面，而是一个球体。<br/><br/>地球上能实现这样路径的地方只有一个：北极点。在北极，无论你面向哪里，都是朝南；向南走10公里后，向东绕行，最后再向北走10公里，恰好回到极点。<br/><br/>既然学者身处北极，那么他遇到的熊自然就是北极熊，而北极熊是白色的。<br/><br/><b>答案</b>：白色。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq28">
+        <div class="q-head"><span class="q-num">Q28</span></div>
+        <h2 class="q-title">能否看清真正需要解决的问题？</h2>
+        <div class="q-body">
+<img alt="Q28配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/80ca2bf76ac54ab1bcbcefa7399a445f.png"/>
+        你可以借助以下4种类型的船只过河，它们分别需要1分钟、2分钟、4分钟和8分钟才能到达对岸。<br/><br/>你最多可以同时操控2艘船过河。<br/><br/>当同时操控2艘船时，航行速度以较慢的那艘为准。<br/><br/>如何在最短时间内将4艘船全部运到对岸，最快需要几分钟？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这个问题的挑战在于存在速度慢的船，我们需要在“加快回程速度”和“整合慢速船”之间找到平衡。关键是：让两艘最慢的船（4分钟和8分钟）一起过河，这样就能把它们的负面影响降到最低，只消耗8分钟！<br/><br/>具体方案如下：<br/>① 1分钟和2分钟的船先过河（用时2分钟）。<br/>② 1分钟的船回来（用时1分钟）。<br/>③ 4分钟和8分钟的船一起过河（用时8分钟）。<br/>④ 此时对岸有2分钟、4分钟、8分钟的船。让2分钟的船回来（用时2分钟）。<br/>⑤ 最后，1分钟和2分钟的船再次一起过河（用时2分钟）。<br/><br/>总用时 = 2 + 1 + 8 + 2 + 2 = 15 分钟。<br/><br/><b>答案</b>：最快需要15分钟。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq29">
+        <div class="q-head"><span class="q-num">Q29</span></div>
+        <h2 class="q-title">能否从相反的角度考虑问题？</h2>
+        <div class="q-body">
+<img alt="Q29配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/149300bcfa0d4fa088834b2bc21bebd8.png"/>
+        国王命令2人进行骑马比赛，获胜一方将得到一大笔金银财宝。<br/><br/>不过国王给出的比赛规则很奇怪：后抵达终点的马才是赢家。<br/><br/>于是，2人为了避免先于对方到达终点而故意放慢速度。<br/><br/>但如果一直这样下去，比赛将永远无法结束。<br/><br/>就在僵局难解之时，一位路过的智者提出了一个方案，稍作调整，就令2人立刻策马疾驰冲向终点。<br/><br/>请问这位智者的方案是什么？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">"后抵达的马"赢得比赛的胜利，这意味着只要让对方的马先到达了终点，你就赢了。<br/><br/>要想让对方的马先到，但又是你自己去骑马，那最快的办法就是两人互相骑对方的马！这样，为了让“自己”的马慢点到终点，两人都会拼命让自己现在骑着的“别人的马”快点到达终点。<br/><br/><b>答案</b>：让双方交换彼此的马。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq30">
+        <div class="q-head"><span class="q-num">Q30</span></div>
+        <h2 class="q-title">能否利用限制进行创造和想象？</h2>
+        <div class="q-body">
+<img alt="Q30配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/f5259c8d658d41e8b3ccd27d3e0b7352.png"/>
+        有一片广阔的沙漠，步行穿越需要6天。<br/><br/>你决定挑战穿越这片沙漠，并可以雇用搬运工与你同行。<br/><br/>然而，旅途中存在一个限制：每人最多只能携带4天的食物。<br/><br/>此外，还有一项重要规则——不允许出现遇难者，搬运工也要安全到达终点，或者返回起点。<br/><br/>那么，你需要雇用多少名搬运工才能成功穿越沙漠呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">至少需要2名搬运工。假设你雇佣了搬运工A和搬运工B，一共3人出发，每人带4天食物，共带12天的食物。<br/><br/>第1天结束：3人各消耗1天，剩余9天食物。搬运工A将1天的食物分给你，1天的食物分给搬运工B，留下1天的食物供自己第2天返回。此时你和搬运工B的食物都重新补满到4天。搬运工A安全返回。<br/>第2天结束：你和搬运工B各消耗1天，剩余食物每人3天。搬运工B将1天食物分给你，留下2天供自己返程使用（因为深入了2天，需要2天食物返程）。此时你的食物再次补满到4天。搬运工B安全返回。<br/><br/>接下来，你还剩4天的路程，而你刚好带有4天的满额食物，正好可以独自走完剩余的沙漠。<br/><br/><b>答案</b>：至少需要雇用2名搬运工。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq31">
+        <div class="q-head"><span class="q-num">Q31</span></div>
+        <h2 class="q-title">能否改变思维方式去创造和想象？</h2>
+        <div class="q-body">
+<img alt="Q31配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/39b02ed17a484a669331d32379bed090.png"/>
+        你面前的盒子里装有20个白球和13个黑球。<br/><br/>随机从盒子里取出2个球。<br/><br/>如果两球的颜色相同，则将1个白球放回盒子里；如果两球的颜色不同，则将1个黑球放回盒子里。<br/><br/>重复这个过程，盒子里球的数量会逐渐减少，最后剩下的那个球是什么颜色呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">取出球时，盒子里的球将发生如下变化：<br/>取出两个白球→放回白球（白-1，黑不变）；<br/>取出白+黑→放回黑球（白-1，黑不变）；<br/>取出两个黑球→放回白球（白+1，黑-2）。<br/><br/>我们发现，无论是哪种操作，黑球的数量要么不变，要么每次减少2个！因为最初有13个（奇数）黑球，所以黑球无论怎么减少，剩下的数量必定是奇数（13→11→9...→1）。<br/><br/>在只剩最后一个球时，黑球的数量不可能减到0，所以它必然剩下1个。因此最终剩下的球只能是黑色。<br/><br/><b>答案</b>：黑色。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq32">
+        <div class="q-head"><span class="q-num">Q32</span></div>
+        <h2 class="q-title">能否跳脱条件的限制进行思考？</h2>
+        <div class="q-body">
+<img alt="Q32配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/dfe7a534ff2941b4a71e2a485b720473.png"/>
+        桌子上放着很多硬币，其中只有10枚正面朝上，其余都是背面朝上。<br/><br/>你需要在蒙着眼睛的状态下将硬币分成2组，并且必须确保2组中正面朝上的硬币数量相同。<br/><br/>你应该如何实现这一点呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">在蒙眼且不知情的情况下，随便拿出10枚硬币分成一组（记为“10枚组”），剩下的所有硬币记为“其他组”。<br/>假设这“10枚组”中，碰巧有 N 枚是正面朝上的，那么此时“其他组”里面必定有 10 - N 枚是正面朝上的（因为所有硬币加起来只有10枚是正面的）。<br/><br/>这时候，你只要把“10枚组”里面的所有硬币都翻面！原本正面的 N 枚变成了反面，原本反面的 10 - N 枚变成了正面。<br/><br/>你看，“10枚组”里正面的硬币变成了 10 - N 枚，而“其他组”里面正面的硬币也是 10 - N 枚。两组正面朝上的数量就完美相等了！<br/><br/><b>答案</b>：将所有硬币随机分为包含10枚硬币的A组和剩下的B组，然后将A组的10枚硬币全部翻转一面即可。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq33">
+        <div class="q-head"><span class="q-num">Q33</span></div>
+        <h2 class="q-title">能否果断放弃不可能的选项？</h2>
+        <div class="q-body">
+<img alt="Q33配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/a8d65137991048f890a489b0f5c2eeae.png"/>
+        你想邮寄一些宝石送给客户，但是客户所在的国家治安很差，要是没上锁，箱子就会被盗，但只要上锁了，就可以安全邮寄。<br/><br/>箱子上可以使用任意类型和任意数量的锁。<br/><br/>但是，客户手中没有钥匙，如果将上了锁的箱子和钥匙一起邮寄，箱子也会被打开，里面的东西依然会被偷走。<br/><br/>怎么做才能安全地邮寄宝石呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">解题的关键在于“箱子上可以装多个锁”，而且问题可以通过多次邮寄来解决。<br/><br/>先用锁A锁住箱子，并邮寄给客户。客户收到箱子后，因为没有钥匙打不开，但他可以给箱子再加上一把他自己的锁B，然后再原路寄回给你。<br/><br/>你收到箱子后，用自己的钥匙打开锁A并取下，此时箱子上只剩下客户的锁B了。再一次将箱子邮寄给客户。客户收到箱子后，用自己的钥匙打开锁B，顺利开箱取出宝石。<br/><br/><b>答案</b>：先用自己的锁锁上寄出，客户加上他的锁再寄回；你取下自己的锁寄出，最后客户开自己的锁即可。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq34">
+        <div class="q-head"><span class="q-num">Q34</span></div>
+        <h2 class="q-title">能否冷静地俯瞰全局？</h2>
+        <div class="q-body">
+<img alt="Q34配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/309a74fa5ce1470687fbe0f8ecfb8432.png"/>
+        有3个水果箱，分别是“装有苹果的箱子”“装有橘子的箱子”以及“苹果和橘子随机混装的箱子”。<br/><br/>起初，每个箱子的标签都与内部的水果种类一一对应，即“苹果”“橘子”和“随机”。<br/><br/>但后来，不知何故，所有的标签都贴错了。<br/><br/>要想确认这3个箱子里是苹果、橘子，还是随机混装的水果，最少需要打开几个箱子？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">既然所有的标签都贴错了，那么贴着“随机”标签的箱子里，装的绝对不可能是随机混装水果，它只能是纯苹果或者纯橘子。<br/><br/>我们只需打开这个贴着“随机”标签的箱子，拿出一个水果。如果拿出来的是苹果，那么这个箱子装的必然全是苹果。剩下的两个箱子分别贴着“苹果”和“橘子”。因为贴着“橘子”标签的箱子不能装橘子，而苹果已经被确认，所以贴着“橘子”的箱子里必定是随机水果。剩下的那个贴着“苹果”标签的箱子里装的自然就是橘子了。<br/><br/>只需打开1个箱子，就能推断出所有箱子里的水果。<br/><br/><b>答案</b>：最少需要打开1个箱子（贴有“随机”标签的那个箱子）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq35">
+        <div class="q-head"><span class="q-num">Q35</span></div>
+        <h2 class="q-title">能否找出应该关注的选项？</h2>
+        <div class="q-body">
+<img alt="Q35配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/659b544a8b4e4f1ca591de0b39fee207.png"/>
+        同事有3个女儿，他给了你一些提示，好让你猜出他女儿们的年龄。<br/><br/><b>提示1</b>：所有孩子的年龄相乘等于72。<br/>你回答："我猜不出来。"<br/><br/><b>提示2</b>：所有孩子的年龄相加等于今天的日期。<br/>你回答："我猜不出来。"<br/><br/><b>提示3</b>：只有年龄最大的那个女儿喜欢吃冰激凌。<br/>你回答："我知道了！"<br/><br/>请问3个女儿的年龄是多少岁？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">我们先列出相乘结果为72的所有3个数字的组合，并计算出年龄之和：<br/>1+6+12=19； 1+8+9=18； 2+2+18=22； 2+3+12=17； 2+4+9=15； 2+6+6=14； 3+3+8=14； 3+4+6=13 等。<br/><br/>你会发现，只有“2、6、6”和“3、3、8”这两组的年龄之和都是14。因为你听了第2个提示（年龄之和等于日期）后依然猜不出来，说明当天的日期一定是14日，正是由于和数有重复选项，才导致你无法做出唯一的选择。<br/><br/>第3个提示：“只有年龄最大的那个女儿喜欢吃冰激凌”。这说明年龄最大的孩子有且只有一个。在“2、6、6”中，最大的年龄是6岁，但有两个孩子，没有“唯一最大”。而在“3、3、8”中，最大的孩子是8岁，只有她一个，这与提示完美吻合！<br/><br/><b>答案</b>：3个女儿的年龄分别是3岁、3岁和8岁。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq36">
+        <div class="q-head"><span class="q-num">Q36</span></div>
+        <h2 class="q-title">能否揭示隐藏的事实？</h2>
+        <div class="q-body">
+<img alt="Q36配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/637b36367bb64ae99aea0e031b0ef752.png"/>
+        在一座岛上，生活着4种类型的人：“老实人”总是说真话。<br/><br/>“假老实人”虽然也说真话，但当自己是犯人时，就会撒谎说“我是无辜的”。<br/><br/>“骗子”总是说假话。<br/><br/>“正义的骗子”虽然也说假话，但当自己是犯人时，会承认“我是犯人”。<br/><br/>一天，岛上发生了布丁被偷吃案件，据目击者称，犯人只有1人，当时有作案嫌疑的A、B、C的供述如下：<br/><br/>A说：“我是无辜的，B是犯人。”<br/>B说：“我是无辜的，A是犯人。”<br/>C说：“我是无辜的，我不是和A同一类人。”<br/><br/>到底是谁偷吃了布丁？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题由于有“假老实人”和“正义的骗子”的存在，很容易让人绕晕。我们可以通过假设犯人是谁来进行排除：<br/><br/>假设C是犯人：A的发言（说B是犯人）是假话，说“我是无辜的”是真话。但岛上没有既说真又说假的人（除非是针对自己是犯人的特殊情况）。所以A的发言存在矛盾，因此C不是犯人。<br/><br/>假设B是犯人：A的发言全是真话（A是老实人）。B的发言全是假话（B是骗子）。C说自己无辜是真话，说跟A不是一类人，由于此时A和C都是说真话的“老实人”，所以C这句话是假话。C也是既说真又说假，矛盾！所以B也不是犯人。<br/><br/>假设A是犯人：A的发言全假，A是“骗子”（注：A不可能是“正义的骗子”，因为正义的骗子当犯人时会承认自己是犯人，而A说自己无辜）。B的发言全真，B是“老实人”。C说自己无辜（真），且跟A不是一类人（真，因为A是骗子，C是老实人），C也是“老实人”。此时所有人的人设和话语逻辑完美闭环！<br/><br/><b>答案</b>：A偷吃了布丁。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq37">
+        <div class="q-head"><span class="q-num">Q37</span></div>
+        <h2 class="q-title">能否找到缩小范围的思维线索？</h2>
+        <div class="q-body">
+<img alt="Q37配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/cdf52ccd6de347c7986702ad1e0338a2.png"/>
+        你和1个同事从另外4家公司各邀请了2人来参加派对，派对共有10人参与。<br/><br/>每人只与初次见面的人交换了名片。<br/><br/>随后，你询问除自己以外的9名参加者“你与多少人交换了名片”，结果9人给出了完全不同的答案。<br/><br/>请问，你的同事与多少人交换了名片呢？<br/><br/>注：谁都不会和自己或自己的同事交换名片，毕竟他们彼此已经认识，不算初次见面。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这9人给出的答案必须是0到8，因为每个人最多只能和除了自己和自己同事以外的8个人交换名片。<br/><br/>回答8人的人（称其为P8），除了自己和同事外，与所有人都交换了名片。这意味着除了P8的同事外，其余所有人都至少交换了1次名片。所以，回答0次的人（P0）一定就是P8的同事。<br/><br/>以此类推，回答7人的人（P7），没有和P0及其自己的同事交换名片，和其余所有人都交换了。所以其余人都至少交换了2次。因此回答1次的人（P1）一定就是P7的同事。<br/>同理，P6和P2是同事，P5和P3是同事。<br/><br/>最后剩下的一个人，回答了4次。既然所有成对的伴侣都已经配对完毕（8-0, 7-1, 6-2, 5-3），这个落单的、回答了4次的人，必然就是你！<br/><br/>而你的同事，作为你未提问的那个对象，他的交换人数必然也和你一样遵循对称结构。因为你交换了4人，作为没有被配对的同伴，你的同事肯定也交换了4次。<br/><br/><b>答案</b>：你的同事与4人交换了名片。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq38">
+        <div class="q-head"><span class="q-num">Q38</span></div>
+        <h2 class="q-title">能否洞察他人的想法？</h2>
+        <div class="q-body">
+<img alt="Q38配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/9110d9b3d17744c4ba50ff661c5c9f2e.png"/>
+        A、B、C3人被恶魔抓住，并分别关在不同的房间里。<br/><br/>每个房间的门上都安装了一把3位数的密码锁，他们要想逃脱，就必须解开密码。<br/><br/>恶魔告诉3人：“3把密码锁的密码是相同的，且密码是介于000和999之间的数字。<br/><br/>这3个数字相加之和为9，每个数字都大于或等于左侧的数字。”<br/><br/>不仅如此，恶魔还告诉了A最左边的数字，B中间的数字，C最右边的数字。<br/><br/>3人虽然不能互相交流，但随时都可以知道谁在什么时候打开了锁。<br/><br/>刚开始，3人都打不开锁，但是过了一会儿，B率先打开了锁，随后C和A也相继打开了锁。<br/><br/>请问正确的密码是什么呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">符合条件的所有可能密码组合并不多，总共只有以下12组：009、018、027、036、045、117、126、135、144、225、234、333。由于刚开始没人知道答案，这排除了右侧数字具有唯一性的那些密码（比如009、018、333的右边数字非常独特，如果C看到这几个数字，一猜即知就能出门）。<br/><br/>为什么B可以率先开锁？让我们再观察一下表格中的组合，特别是中间的数字，它可能隐藏着B能率先解锁的线索。如果中间的数字是“2”“3”“4”，由于存在不止一种组合，B无法确定正确答案。只有当中间的数字是“1”时，在排除了“018”这个C可以直接秒解的答案之后，剩下的只会是唯一的组合：“117”。<br/><br/>因此，当B等待片刻发现C没有直接走出来后，他就百分百确定密码只能是“117”。<br/><br/><b>答案</b>：正确的密码是117。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq39">
+        <div class="q-head"><span class="q-num">Q39</span></div>
+        <h2 class="q-title">能否在迷雾中摸索前行？</h2>
+        <div class="q-body">
+<img alt="Q39配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/6a8cf548dc1946c4a73e3be965198413.png"/>
+        有一场只有3人参加的运动会，每个单项比赛的积分分配如下：第1名积X分，第2名积Y分，第3名积Z分，且每个名次的积分都是整数，且满足X&gt;Y&gt;Z&gt;0这个条件。<br/><br/>所有单项比赛结束后，没有出现过平局，最终比赛结果如下：<br/>A的总积分为22分。<br/>B是标枪项目的第1名，总积分为9分。<br/>C的总积分为9分。<br/><br/>请问百米短跑项目的第2名是谁？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">总积分为 22 + 9 + 9 = 40。通过推理可以确定单项比赛只能是5场，每场总积分为8分。满足条件的唯一积分组合是：第一名5分，第二名2分，第三名1分。<br/><br/>A总分22分，由于5×4 + 2 = 22，所以A获得了4个第一名和1个第二名。<br/>B总分9分，并且是标枪第一（得5分），剩下的4分只能是4个第三名（4×1分），也就是除了标枪外的项目全垫底。<br/>C总分9分，既然第一名和标枪都被瓜分完了，他只能获得4个第二名（4×2分）和1个第三名（1分）。<br/><br/>在标枪项目中，B是第一名，那么由于A只有一个第二名，C只有一个第三名，所以A必然在这场比赛里得第二，C得第三。<br/>这就意味着在其余的所有项目（包括百米短跑）中，名次都是固定的：A是第一名，C是第二名，B是第三名。<br/><br/><b>答案</b>：百米短跑项目的第2名是C。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq40">
+        <div class="q-head"><span class="q-num">Q40</span></div>
+        <h2 class="q-title">能否切换视角进行思考？</h2>
+        <div class="q-body">
+<img alt="Q40配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/d00a1a6026594a0e8b97fe584c659f28.png"/>
+        你和哥哥一起干完花园里的杂活回到家。<br/><br/>虽然你们2人都能看到对方的脸，但看不到自己的脸。<br/><br/>父亲看到你们的脸后说：“至少有1人的脸上沾了泥。”<br/><br/>随后父亲让你们俩面对面站着，并说道：“如果自己的脸上沾了泥，请举手。”<br/><br/>但是你和哥哥都没有举手。<br/><br/>可父亲继续说：“如果自己的脸上沾了泥，请举手。”<br/><br/>此时，你应该怎么做呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">父亲第一次提问时，你们都没有举手。我们可以试着从哥哥的角度思考一下。<br/><br/>如果你的脸上没有泥，哥哥在听到父亲说“至少有1人的脸上沾了泥”后，就会立刻意识到这唯一的一个人就是他自己。所以如果你的脸上没泥，哥哥在父亲第一次提问时就应该举手了。<br/><br/>但是，哥哥在第一次提问时并没有举手，这意味着他眼中的世界里，依然有人脸上有泥（也就是你）。哥哥的沉默为你提供了一条决定性的线索：你的脸上也有泥。<br/><br/><b>答案</b>：在父亲第2次提问时，你应该果断举手。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq41">
+        <div class="q-head"><span class="q-num">Q41</span></div>
+        <h2 class="q-title">能否读懂别人的想法？</h2>
+        <div class="q-body">
+<img alt="Q41配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/d54008f307a0431eae8326e45632ba91.png"/>
+        你和哥哥、姐姐戴着帽子站在台阶上，按照从下至上的顺序依次是哥哥、你、姐姐。<br/><br/>你们看不到自己帽子的颜色，但能看到站在自己下面台阶的人帽子是什么颜色。<br/><br/>你们3人都知道帽子是从2顶红色和2顶蓝色的帽子中随机选择的。<br/><br/>父亲对你们说：“如果谁能猜出自己帽子的颜色，谁就能得到奖励。”<br/><br/>但是，一开始并没有人回答。<br/><br/>你能回答出自己帽子的颜色吗？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">通过题目的条件可以看出，姐姐比你和哥哥占据更有利的位置，因为她可以看到除自己以外所有人的帽子颜色。而且通过分析题意可以知道，当你和哥哥的帽子颜色相同时（耗尽了某种颜色的2顶帽子），姐姐就可以立刻判断出自己帽子的颜色与你们不同。但题目说一开始没有人回答，说明姐姐看到你和哥哥的帽子颜色不同，因此无法确定自己的帽子颜色。<br/><br/>那么从你的角度来看：既然姐姐没有回答，说明你和哥哥的帽子颜色是不一样的。此时你往下看，只要看到哥哥帽子是什么颜色，你立刻就能知道自己的颜色必定是另一种。<br/><br/><b>答案</b>：你能够推断出自己帽子的颜色（和哥哥的颜色相反）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq42">
+        <div class="q-head"><span class="q-num">Q42</span></div>
+        <h2 class="q-title">能否洞察行为背后的意图？</h2>
+        <div class="q-body">
+<img alt="Q42配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/5e28e2e975b9494cad15e26a85736124.png"/>
+        你和哥哥、姐姐一起乘坐火车。<br/><br/>你们3人正在看书时，突然从窗户吹进来一阵风。<br/><br/>你放下书抬起头，轻声笑了出来。<br/><br/>因为你看到哥哥和姐姐的头发都乱了。<br/><br/>哥哥和姐姐也一直在轻声笑着。<br/><br/>看到这一幕，你的想法是：他们两人应该都认为自己的头发是整齐的，并且看到别人头发凌乱后笑了。<br/><br/>请问你的头发乱了吗？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">如果你自己的头发是整齐的，那么哥哥就能看到你的头发是整齐的，只有姐姐的头发是凌乱的。在这种情况下，哥哥应该能迅速推断出自己的头发状态——因为如果他知道自己的头发是整齐的，那么在他眼里就只有姐姐一个人头发乱了。当你看到只有姐姐乱了的时候，你就不应该笑出声。但你确实笑了，说明你看到了至少2个人的头发是乱的。这本来足以让哥哥推测出自己的头发也乱了。<br/><br/>然而，哥哥和姐姐一直都在轻声笑着，并没有人突然停下来恍然大悟。这意味着他们每个人眼里的情况都是相似的，都在被眼前的两个人同时头发乱掉的场面逗笑。<br/><br/>综上所述，只有当你们三人的头发都是凌乱时，才能解释这种微妙的反应。<br/><br/><b>答案</b>：你的头发也是乱的。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq43">
+        <div class="q-head"><span class="q-num">Q43</span></div>
+        <h2 class="q-title">能否预判未来的趋势？</h2>
+        <div class="q-body">
+<img alt="Q43配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/5d16efc6cf36404fac445e2014bad1e0.png"/>
+        你、A和B3人依次用水枪进行射击。<br/><br/>被射中的人将被淘汰，直到只剩下1人，水枪战才算结束。<br/><br/>你们3人的射击能力有所不同：你的命中率是30%，A的命中率是50%，B的命中率是100%。<br/><br/>所有人都会进行合理规划，并采取最佳策略，以获得最终的胜利。<br/><br/>那么，作为第1个进行射击的人，你应该采取什么样的策略才更可能获胜呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">如果在第1轮你射中了A，A被淘汰，接下来就轮到100%命中率的B射击，你必死无疑。如果你在第1轮射中了B，B被淘汰，接下来轮到A射击，他的命中率有50%，你面临很大风险，且失去了先发优势。<br/><br/>你需要故意在第1轮中射击失误，从而创造出一个让另外2人1对1对决的情况。因为在你失误后，轮到A射击，A绝不敢去射击命中率只有30%的你，因为他一旦不射击B，下一个轮到B时，B一定会淘汰命中率更高的A。所以A必然全力瞄准B。如果A射中B，接下来就轮到你射击A；如果A没射中B，B就会把命中率最大的威胁A给解决掉，然后也会轮到你先开火射击B。<br/><br/>无论如何，你都能活过第一轮，并获得在只剩两人的决斗中的第一发开火权。<br/><br/><b>答案</b>：你故意在第1轮中朝天开枪（故意失误）。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq44">
+        <div class="q-head"><span class="q-num">Q44</span></div>
+        <h2 class="q-title">能否引导他人实现预期目标？</h2>
+        <div class="q-body">
+<img alt="Q44配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/c5a7a3c38972460a8e2d18cad43400b1.png"/>
+        A、B、C、D、E5个人要分100枚金币。<br/><br/>每人按照“A→B→C→D→E”的顺序分别提出一分配方案，随后5人分别投票表示“赞成”或“反对”如果赞成票达到或超过半数，分配方案就会被采纳。<br/><br/>如果分配方案未被采纳，提出方案的人将被淘汰，由下一个人继续提出新的分配方案。<br/><br/>这5人都非常理性，谁也不想被淘汰，并且每个人都想得到尽可能多的金币。<br/><br/>如果赞成或反对投票的结果都不会影响他们最终得到的份额，他们就会选择反对。<br/><br/>A应该提出什么样的分配方案，才能确保自己得到最多的金币呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这道题改编自著名的“海盗分金币”问题。我们需要逆向推理：<br/>如果只剩D和E，D提议D:100，E:0。此时1票赞成1票反对，达到半数方案通过，E什么也得不到。<br/>如果剩C、D、E三人，C只需要拉拢E，给他1枚金币（因为E在上述D的方案里只能拿到0）。所以C提议：C:99，D:0，E:1。方案2赞成1反对通过。<br/>如果剩B、C、D、E四人，B需要拉拢D，因为在C的方案里D拿到0。B只需提议：B:99，C:0，D:1，E:0。方案2赞成2反对通过。<br/>最后，对于A而言，为了拿到3票（加上自己一票还需要两票），他需要拉拢在B方案中拿0的人，也就是C和E。只需要各给他们1枚金币，他们就会欣然同意（总比B当家时拿0好）。<br/><br/><b>答案</b>：A应该提出“A:98，B:0，C:1，D:0，E:1”的方案。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq45">
+        <div class="q-head"><span class="q-num">Q45</span></div>
+        <h2 class="q-title">能否制定出获胜的长期战略？</h2>
+        <div class="q-body">
+<img alt="Q45配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/53e8e167e09945ff97f258983325c646.png"/>
+        有一个国家实施了工资制度改革，所有66名国民的工资，包括国王在内，都变成了1美元。<br/><br/>然而，国王有权提出重新分配工资的方案，该方案将由所有国民投票决定，如果赞成票超过反对票，方案就会被执行。<br/><br/>每个人投票的逻辑是，只要自己的工资增加就选择“赞成”，减少就选择“反对”，不变就选择“弃权”。<br/><br/>不过，国王自己没有投票权。<br/><br/>请问国王最多能得到多少工资呢？<br/><br/>注：所有人的工资总额只有66美元。<br/><br/>每个人的工资额按整数增加或者减少。<br/><br/>分配方案的提议和投票可以发起多次。</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">国王无法直接一次性增加自己的工资，但他可以通过巧妙的多轮分配来收割国民的财富。<br/>第一轮：国王提议让其中33人工资变为2美元，其余33人为0美元（国王自己也为0）。33人赞成，方案通过。<br/>第二轮：国王从这33个拿2美元的人中选出17人，提议给这17人每人3美元，给之前拿0美元的33人中选出17人每人给1美元，其余人0美元。这34人会赞成（17人从2变3，17人从0变1），方案以34票通过。<br/><br/>通过不断这样“以小恩小惠拉拢一半人，从而剥夺另一半人”的循环迭代，资金会越来越集中到越来越少的人手里。最终，国王可以发起最后一轮提议：将绝大多数的钱转移到自己手中，只给刚过半数的支持者最微薄但能增加其当前收入的利益（比如从0变成1美元）。通过这样的一套复杂的动态投票联盟计算，最终只有1个人拿1美元来支撑投票通过，而国王可以将所有剩下的财富收入囊中。<br/><br/><b>答案</b>：国王最多能得到65美元。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq46">
+        <div class="q-head"><span class="q-num">Q46</span></div>
+        <h2 class="q-title">能否深度思考“假设中的假设”？</h2>
+        <div class="q-body">
+<img alt="Q46配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/5b28816096fa4820a54febc19cbfbee8.png"/>
+        有4张白色邮票和4张绿色邮票。<br/><br/>给A、B、C3人看了这8张邮票后，随机在每人的额头上贴上2张，再把剩下的2张放进盒子里。<br/><br/>3人看不到自己额头上邮票和盒子里邮票的颜色，但可以看到其他2人额头上邮票的颜色。<br/><br/>现在，问3人是否知道自己额头上邮票的颜色，<br/><br/>A说：“我不知道。”<br/>B说：“我不知道。”<br/>C说：“我不知道。”<br/>A又说：“我不知道。”<br/>B又说：“我知道了！”<br/><br/>请问B额头上的2张邮票是什么颜色的？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这是一个典型的逻辑推演“心理战”。<br/>第1轮的回答说明了“没有任何2个人的邮票是同一种颜色的组合”。<br/>第2轮A依然不知道，说明他并没有排除所有多余的假设。但是B听完A的第二次“不知道”后，立刻豁然开朗。<br/>B会这样思考：假设我额头上是“白-白”，A就会在第一轮推演得出结果。但A没有得出。说明A意识到了自己的颜色。可是即使在第2轮A还是回答不知道，这反向排除了“白-白”或者“绿-绿”的组合。<br/><br/>既然我头上既不是“白-白”，也不是“绿-绿”，那么只剩下唯一的一种可能了。<br/><br/><b>答案</b>：B额头上的邮票是一张白色和一张绿色。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq47">
+        <div class="q-head"><span class="q-num">Q47</span></div>
+        <h2 class="q-title">能否发现语言中隐藏的真实意图？</h2>
+        <div class="q-body">
+<img alt="Q47配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/8adb5cd7cacf4a68bbe6048e80376d02.png"/>
+        A、B、C这3人问查理：“你的生日是什么时候？”<br/><br/>查理说他的生日是下面的日期之一。<br/><br/>1999年4月14日、2000年2月19日、2000年3月14日、2000年3月15日、2000年4月15日、2000年4月16日、2001年2月15日、2001年3月15日、2001年4月14日、2001年4月16日、2001年5月14日、2001年5月16日、2001年5月17日、2002年2月17日。<br/><br/>随后，查理分别将正确的月份告诉A，日期告诉B，年份告诉C。<br/><br/>查理的这个安排，他们3人都知道。<br/><br/>被问到查理的生日是什么时候时，<br/><br/>A说：“我不知道，B也不知道。”<br/>B说：“是的，C也不知道。”<br/>C说：“嗯，我不知道。但A现在还是不知道。”<br/>B说：“啊，我知道了。”<br/>A说：“现在大家都知道了。”<br/><br/>请问查理的生日是什么时候？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">本题源自著名的逻辑谜题“谢丽尔的生日”的极高难度衍生版。解题思路是通过三人的“不知道”进行层层排除法。<br/><br/>首先，A知道B不知道，说明A拿到的月份里没有独一无二的日子（排除了包含特异日期的月份）。<br/>随后，B说C也不知道，这意味着在剔除了刚才的月份后，B发现自己手中的日期对应着多个年份的可能。<br/>之后C的表态进一步剔除了可能的冗余，此时剩下的日期选项极度缩小。<br/>最后当B终于表示自己知道了的时候，意味着在残存的日期中，他手中的日子指向了唯一的最终答案。<br/><br/>在交替利用这三人的相互否决后，只有唯一的一个日期能够满足他们对话中所展现出来的认知演变轨迹。<br/><br/><b>答案</b>：查理的生日是2001年4月16日。（由于详细逻辑十分繁复，此处仅提供解题关键方向）</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq48">
+        <div class="q-head"><span class="q-num">Q48</span></div>
+        <h2 class="q-title">能否预测事物后续的发展？</h2>
+        <div class="q-body">
+<img alt="Q48配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/257e2d7dee2a4e75961fc773d412a287.png"/>
+        你来到了一座岛屿，岛上居住着100条长着绿色眼睛的龙。<br/><br/>岛上有一条奇怪的规则：如果哪条龙知道了自己的眼睛是绿色的，它就必须在当晚离开岛屿。<br/><br/>岛上没有镜子，龙之间也禁止交流。<br/><br/>也就是说，这100条龙不知道自己眼睛的颜色，因此一直以来，没有龙离开岛屿。<br/><br/>当然，它们知道其他龙的眼睛是绿色的。<br/><br/>就在你即将离开岛屿时，你对所有的龙说了一句话：“至少有1条龙的眼睛是绿色的。”<br/><br/>至少有1条龙的眼睛是绿色的！<br/><br/>注：这些龙极具逻辑思维能力，并且它们每天早上都会在广场上集合一次。<br/><br/>请问接下来会发生什么呢？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">这是一个典型的公共知识逻辑问题。我们从最简单的情况推理。<br/><br/>假设岛上只有1条绿眼龙。你说出这句话后，它没看到别人是绿眼，就会立刻知道自己是，当天晚上就会离开。<br/>如果岛上有2条。第一天它们等对方走，结果对方没走。第二天它们都会意识到对方看到自己是绿眼才没走，所以第2天晚上2条龙一起走。<br/>同理，如果有N条龙，它们会在前N-1天互相观望，并在第N天晚上同时大彻大悟。<br/><br/>既然岛上有100条绿眼睛的龙，在接下来的99天里，岛上会鸦雀无声，所有的龙都在默默观察。当到了第100天，所有的龙都会豁然开朗，意识到自己的眼睛也是绿色的。<br/><br/><b>答案</b>：在第100天晚上，岛上所有的100条龙会一起离开岛屿。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq49">
+        <div class="q-head"><span class="q-num">Q49</span></div>
+        <h2 class="q-title">能否突破无法推测的困境？</h2>
+        <div class="q-body">
+<img alt="Q49配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/text-to-image/2026/06/da843e8ba3344647a20048a0410edbc0.png"/>
+        A和B正在进行一场推理游戏。<br/><br/>他们各自拿到“连续的2个数字（正整数）”中的1个，但他们不知道对方的数字，也无法互相交流。<br/><br/>游戏开始后，每过1分钟，钟声就会响起。<br/><br/>钟声响起后，2人可以选择推测对方的数字并回答或继续保持沉默。<br/><br/>一旦有人回答，游戏立即结束。<br/><br/>每人只有1次回答机会，如果猜错，则立刻输掉游戏。<br/><br/>请问是拿到数字较大的一方更有机会获胜还是数字较小的一方更占优势？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">当2人拿到的数字是“n”和“n+1”时，拿到较小数字“n”的人可以观察对方是否作答。如果在第“n-1”次钟声响起后，对方仍未回答，就意味着对方的数字必定是“n+1”。<br/><br/>因此，在第n次钟声响起时，拿到数字“n”的人只要回答对方的数字是“n+1”，就能确保获胜。<br/><br/><b>答案</b>：数字小的一方更有机会获胜。</div>
+</div>
+    </div>
+    
+    <div class="card" id="mq50">
+        <div class="q-head"><span class="q-num">Q50</span></div>
+        <h2 class="q-title">能否掌控复杂的思维读心术？</h2>
+        <div class="q-body">
+<img alt="Q50配图" class="q-img" onclick="openLB(this.src)" src="https://platform-outputs.agnes-ai.space/images/t2i/763f5003e9174442b3e3ff97941d3735.png"/>
+        A、B、C3人从A开始轮流从1000块饼干中取走饼干，每次至少取1块，直到取完为止。<br/><br/>但是，3人在取饼干时遵循以下规则：<br/>①都想尽可能多地拿走饼干，但不希望自己成为“拿的最多的”“拿的最少的”或“与其他人拿的数量相同”的人。<br/>②如果无法满足①，就会不顾一切地拿走尽可能多的饼干。<br/><br/>3人都极其理性，虽然他们不能进行交流，但能知道每人拿了多少饼干。<br/><br/>如果A要赢得胜利，他应该拿走多少饼干？<br/><br/>在A获胜的情况下，B和C拿走的饼干数量又会是多少？</div>
+        <button class="reveal-btn" onclick="toggleA(this)">显示解析</button>
+        <div class="q-answer" style="display:none">
+<div class="answer-label">💡 解析</div>
+<div class="answer-text">总结一下题意，其实就是每人都想成为“3人中拿走饼干数量第2多的人”。<br/><br/>如果A在第一局拿得太多或者太少，都有可能被B或C顺水推舟，使得自己丧失成为唯一第二名的机会。这涉及复杂的逆向博弈树分析。A必须在第一轮拿走合适的数量，使得剩下的所有局面演变结果都完全符合自己的预期。<br/><br/>通过严格的数学推演，A只需在第一轮拿走特定的数量，就可以稳稳锁定第二名的地位：A拿走333块。剩下667块给B，为了不成为垫底，B别无选择只能尽可能地拿走剩下饼干的绝大多数，也就是666块，将最后1块丢给C。<br/><br/>这样，最终拿走的饼干数量是：B(666) > A(333) > C(1)，A成功成为了第二多的人。<br/><br/><b>答案</b>：A应该拿走333块饼干。在A获胜的情况下，B拿走了666块，C拿走了1块。</div>
+</div>
+    </div>
+    
+</div>
+
+<!-- Drawer -->
+<div class="drawer-overlay" id="drawer">
+    <div class="drawer" onclick="event.stopPropagation()">
+        <div class="drawer-header">
+            <h3>全部题目 (50)</h3>
+            <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+        </div>
+        <div class="drawer-list">
+
+            <a href="#mq1" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q01</span><span class="d-title">能否质疑事实？</span></a>
+            <a href="#mq2" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q02</span><span class="d-title">能否通过逻辑思维发现盲点？</span></a>
+            <a href="#mq3" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q03</span><span class="d-title">能否仅凭单一线索找出思维真相？</span></a>
+            <a href="#mq4" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q04</span><span class="d-title">能否发现隐藏的线索？</span></a>
+            <a href="#mq5" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q05</span><span class="d-title">能否整合杂乱无章的思维线索？</span></a>
+            <a href="#mq6" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q06</span><span class="d-title">能否发现碎片信息中的思维线索？</span></a>
+            <a href="#mq7" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q07</span><span class="d-title">能否发现解题的切入点？</span></a>
+            <a href="#mq8" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q08</span><span class="d-title">能否推理出更深一层思维的真相？</span></a>
+            <a href="#mq9" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q09</span><span class="d-title">能否把问题抽象化？</span></a>
+            <a href="#mq10" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q10</span><span class="d-title">能否将多种可能性进行简化？</span></a>
+            <a href="#mq11" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q11</span><span class="d-title">能否破解高难度的逻辑思维问题？</span></a>
+            <a href="#mq12" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q12</span><span class="d-title">能否将逻辑思维能力发挥到极致？</span></a>
+            <a href="#mq13" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q13</span><span class="d-title">能否质疑事实？</span></a>
+            <a href="#mq14" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q14</span><span class="d-title">能否不假思索，脱口而出？</span></a>
+            <a href="#mq15" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q15</span><span class="d-title">能否识破直觉的陷阱？</span></a>
+            <a href="#mq16" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q16</span><span class="d-title">能否放弃先入为主的直觉？</span></a>
+            <a href="#mq17" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q17</span><span class="d-title">能否注意到思考的盲点？</span></a>
+            <a href="#mq18" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q18</span><span class="d-title">能否识破百分比的陷阱？</span></a>
+            <a href="#mq19" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q19</span><span class="d-title">能否使用视觉思维？</span></a>
+            <a href="#mq20" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q20</span><span class="d-title">能否识破数字的陷阱？</span></a>
+            <a href="#mq21" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q21</span><span class="d-title">能否识破概率的陷阱？</span></a>
+            <a href="#mq22" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q22</span><span class="d-title">能否发现隐藏的思维可能性？</span></a>
+            <a href="#mq23" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q23</span><span class="d-title">能否考虑到所有情况？</span></a>
+            <a href="#mq24" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q24</span><span class="d-title">能否识破隐藏在证明中的陷阱？</span></a>
+            <a href="#mq25" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q25</span><span class="d-title">能否识破精心设计的思维圈套？</span></a>
+            <a href="#mq26" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q26</span><span class="d-title">能否摒弃先入为主的思维观念？</span></a>
+            <a href="#mq27" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q27</span><span class="d-title">能否灵活思考问题？</span></a>
+            <a href="#mq28" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q28</span><span class="d-title">能否看清真正需要解决的问题？</span></a>
+            <a href="#mq29" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q29</span><span class="d-title">能否从相反的角度考虑问题？</span></a>
+            <a href="#mq30" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q30</span><span class="d-title">能否利用限制进行创造和想象？</span></a>
+            <a href="#mq31" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q31</span><span class="d-title">能否改变思维方式去创造和想象？</span></a>
+            <a href="#mq32" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q32</span><span class="d-title">能否跳脱条件的限制进行思考？</span></a>
+            <a href="#mq33" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q33</span><span class="d-title">能否果断放弃不可能的选项？</span></a>
+            <a href="#mq34" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q34</span><span class="d-title">能否冷静地俯瞰全局？</span></a>
+            <a href="#mq35" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q35</span><span class="d-title">能否找出应该关注的选项？</span></a>
+            <a href="#mq36" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q36</span><span class="d-title">能否揭示隐藏的事实？</span></a>
+            <a href="#mq37" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q37</span><span class="d-title">能否找到缩小范围的思维线索？</span></a>
+            <a href="#mq38" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q38</span><span class="d-title">能否洞察他人的想法？</span></a>
+            <a href="#mq39" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q39</span><span class="d-title">能否在迷雾中摸索前行？</span></a>
+            <a href="#mq40" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q40</span><span class="d-title">能否切换视角进行思考？</span></a>
+            <a href="#mq41" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q41</span><span class="d-title">能否读懂别人的想法？</span></a>
+            <a href="#mq42" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q42</span><span class="d-title">能否洞察行为背后的意图？</span></a>
+            <a href="#mq43" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q43</span><span class="d-title">能否预判未来的趋势？</span></a>
+            <a href="#mq44" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q44</span><span class="d-title">能否引导他人实现预期目标？</span></a>
+            <a href="#mq45" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q45</span><span class="d-title">能否制定出获胜的长期战略？</span></a>
+            <a href="#mq46" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q46</span><span class="d-title">能否深度思考“假设中的假设”？</span></a>
+            <a href="#mq47" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q47</span><span class="d-title">能否发现语言中隐藏的真实意图？</span></a>
+            <a href="#mq48" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q48</span><span class="d-title">能否预测事物后续的发展？</span></a>
+            <a href="#mq49" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q49</span><span class="d-title">能否突破无法推测的困境？</span></a>
+            <a href="#mq50" class="drawer-item" onclick="closeDrawer()"><span class="d-num">Q50</span><span class="d-title">能否掌控复杂的思维读心术？</span></a>
+
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lb" onclick="closeLB()">
+    <div class="lightbox-close">&times;</div>
+    <img src="" id="lb-img"/>
+</div>
+
+<script>
+function toggleA(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'block') {
+        ans.style.display = 'none';
+        btn.textContent = '显示解析';
+        btn.style.background = 'var(--accent-bg)';
+        btn.style.color = 'var(--accent)';
+    } else {
+        ans.style.display = 'block';
+        btn.textContent = '收起解析';
+        btn.style.background = '#f2f2f7';
+        btn.style.color = 'var(--text3)';
+    }
+}
+function openDrawer() { document.getElementById('drawer').classList.add('active'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('active'); }
+document.getElementById('drawer').addEventListener('click', closeDrawer);
+
+function openLB(src) {
+    document.getElementById('lb-img').src = src;
+    document.getElementById('lb').classList.add('active');
+}
+function closeLB() { document.getElementById('lb').classList.remove('active'); }
+</script>
+
+</body>
+</html>
