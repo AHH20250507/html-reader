@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1782801008724,
+  "updatedAt": 1783417102025,
   "categories": [
     {
       "id": "uncategorized",
@@ -19,15 +19,6 @@
     }
   ],
   "books": [
-    {
-      "id": "book_1782797067266_gbhra6",
-      "title": "ai_erp产品说明书 (0629)",
-      "filename": "book_1782797067266_gbhra6.html",
-      "category": "tech",
-      "pinned": false,
-      "importDate": 1782797069194,
-      "lastRead": 1782801007521
-    },
     {
       "id": "book_1782797069196_7qmeo4",
       "title": "让思考上瘾 手机版",
