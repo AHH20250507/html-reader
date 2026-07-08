@@ -390,6 +390,19 @@ function setGH(t,sessionOnly){if(sessionOnly){sessionToken=t}else{sessionToken='
 function getGHToken(){return sessionToken||localStorage.getItem('hr_gh_token')||BUILTIN_TOKEN}
 function isSessionOnly(){return!!sessionToken}
 
+async function validateToken(){
+  const t=cleanToken(getGHToken());
+  if(!t)return false;
+  try{
+    const r=await fetch('https://api.github.com/rate_limit',{headers:{'Authorization':`token ${t}`,'Accept':'application/vnd.github.v3+json'}});
+    if(!r.ok){
+      if(!sessionToken)localStorage.removeItem('hr_gh_token');
+      return false;
+    }
+    return true;
+  }catch(e){return true}
+}
+
 let state={categories:[{id:'uncategorized',name:'未分类',color:'#86868b'}],books:[],currentCat:'all',viewMode:'grid',searchQuery:''};
 let pendingFiles=[],selectedColor='#007aff';
 
@@ -602,7 +615,7 @@ async function testToken(){const token=cleanToken(document.getElementById('setti
 function saveSettings(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,false);hideSettings();toast('设置已保存');init()}
 function saveSettingsTemp(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,true);hideSettings();toast('临时登录成功');init()}
 
-async function init(){restoreSidebar();renderCategories();renderBooks();if(!getGHToken()){showSettings();return}try{await loadMetadata();renderCategories();renderBooks()}catch(e){if(e.message.includes('401')||e.message.includes('403')){showSettings();toast('Token 无效，请重新设置','error')}else toast('加载失败: '+e.message,'error')}}
+async function init(){restoreSidebar();renderCategories();renderBooks();if(!getGHToken()){showSettings();return}try{if(!(await validateToken())){if(!getGHToken()){showSettings();return}}await loadMetadata();renderCategories();renderBooks()}catch(e){if(e.message.includes('401')||e.message.includes('403')){showSettings();toast('Token 无效，请重新设置','error')}else toast('加载失败: '+e.message,'error')}}
 init();
 </script>
 </body>
