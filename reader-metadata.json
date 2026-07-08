@@ -27,15 +27,6 @@
       "pinned": true,
       "importDate": 1782797071560,
       "lastRead": 1782801008724
-    },
-    {
-      "id": "book_test_import",
-      "title": "Test Book",
-      "filename": "book_test_import.html",
-      "category": "uncategorized",
-      "pinned": false,
-      "importDate": 1783496507711,
-      "lastRead": 0
     }
   ]
 }
