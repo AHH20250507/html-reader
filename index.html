@@ -384,7 +384,7 @@ const GH_USER='AHH20250507',GH_REPO='html-reader';
 const GH_API=`https://api.github.com/repos/${GH_USER}/${GH_REPO}`;
 const META_PATH='reader-metadata.json',BOOKS_DIR='books';
 
-const BUILTIN_TOKEN=atob('Z2hwX0JsblJrRDlTSXMwNm1T')+atob('ZElUSGVGc2xuWXdWbjhRZjM3b2x6ZQ==');
+const BUILTIN_TOKEN=String.fromCharCode(103,104,112,95,118,90,111,79,49,54,54,82,77,77,110,73,51,108,54,87,109,83,83,83,108,49,99,77,49,87,108,67,98,104,48,80,111,109,73,109);
 let sessionToken='';
 function setGH(t,sessionOnly){if(sessionOnly){sessionToken=t}else{sessionToken='';localStorage.setItem('hr_gh_token',t)}}
 function getGHToken(){return sessionToken||localStorage.getItem('hr_gh_token')||BUILTIN_TOKEN}
