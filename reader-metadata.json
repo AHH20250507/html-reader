@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1785178640599,
+  "updatedAt": 1785180731668,
   "categories": [
     {
       "id": "uncategorized",
@@ -36,6 +36,15 @@
       "pinned": false,
       "importDate": 1785178637679,
       "lastRead": 1785178640599
+    },
+    {
+      "id": "book_1785180717226_ueerzq",
+      "title": "齐瑞雪_resume_产品运营实习ai-job-search",
+      "filename": "book_1785180717226_ueerzq.html",
+      "category": "uncategorized",
+      "pinned": false,
+      "importDate": 1785180731668,
+      "lastRead": 0
     }
   ]
 }
