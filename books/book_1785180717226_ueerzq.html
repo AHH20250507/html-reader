@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>齐瑞雪 - 简历</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+  color: #333;
+  line-height: 1.55;
+  background: #f0f0f0;
+  font-size: 13px;
+}
+.resume {
+  max-width: 210mm;
+  margin: 20px auto;
+  padding: 18mm 20mm 14mm;
+  background: white;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+/* ---- Header ---- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid #2c3e50;
+  margin-bottom: 12px;
+}
+.header-left h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.header-contact {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.7;
+}
+.header-contact .label {
+  color: #888;
+}
+.header-photo {
+  width: 108px;
+  height: 144px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  flex-shrink: 0;
+}
+/* ---- Section ---- */
+.section {
+  margin-bottom: 10px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 3px;
+  margin-bottom: 6px;
+}
+/* ---- Education ---- */
+.edu-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1px;
+  font-size: 13px;
+}
+.edu-left { display: flex; align-items: baseline; gap: 6px; }
+.edu-school { font-weight: 700; }
+.edu-tag {
+  display: inline-block;
+  background: #e8f4fd;
+  color: #2980b9;
+  font-size: 10.5px;
+  padding: 0 5px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.edu-detail { color: #555; }
+.edu-date { color: #888; font-size: 12px; white-space: nowrap; }
+.edu-courses {
+  font-size: 12px;
+  color: #666;
+  margin-top: 1px;
+  line-height: 1.6;
+}
+/* ---- Experience ---- */
+.exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.exp-left { display: flex; align-items: baseline; gap: 8px; }
+.exp-company { font-weight: 700; font-size: 13px; }
+.exp-role { color: #555; font-size: 13px; }
+.exp-date { color: #888; font-size: 12px; white-space: nowrap; }
+.bullet-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.bullet-list li {
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 1px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #444;
+}
+.bullet-list li::before {
+  content: "\00b7";
+  position: absolute;
+  left: 1px;
+  color: #888;
+  font-weight: bold;
+}
+.bullet-label {
+  font-weight: 600;
+  color: #222;
+}
+/* ---- Skills ---- */
+.skill-item {
+  margin-bottom: 1px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  padding-left: 12px;
+  position: relative;
+  color: #444;
+}
+.skill-item::before {
+  content: "\00b7";
+  position: absolute;
+  left: 1px;
+  color: #888;
+  font-weight: bold;
+}
+.skill-label {
+  font-weight: 600;
+  color: #222;
+}
+/* ---- Self Evaluation ---- */
+.self-evaluation {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #444;
+}
+/* ---- Print ---- */
+@page {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  body { background: white; }
+  .resume { margin: 0; padding: 18mm 20mm 14mm; box-shadow: none; max-width: none; }
+  .section { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="resume" id="resume">
+  <div class="header">
+  <div class="header-left"><h1>齐瑞雪</h1>
+  <div class="header-contact"><span class="label">电话：</span>18161834054<br><span class="label">邮箱：</span>2716945553@qq.com<br><span class="label">求职意向：</span>产品运营-实习（慧策旺店通·掌上先机）</div></div>
+  
+</div>
+  <div class="section">
+  <div class="section-title">教育背景</div>
+  <div class="edu-row">
+    <div class="edu-left"><span class="edu-school">西安财经大学</span><span class="edu-detail">&nbsp;|&nbsp;软件工程 | 本科</span></div>
+    <span class="edu-date">2020.09 ~ 2024.07</span>
+  </div>
+  
+</div>
+  <div class="section">
+  <div class="section-title">项目经历</div>
+  <div class="exp-header">
+    <div class="exp-left"><span class="exp-company">AI 智能客服知识库问答系统（模拟实战项目）</span><span class="exp-role">产品负责人</span></div>
+    <span class="exp-date">2023.03 ~ 2023.06</span>
+  </div>
+  <ul class="bullet-list">
+<li><span class="bullet-label">需求调研与竞品分析：</span>深度调研多款主流 AI 客服产品并输出竞品分析报告；通过用户访谈提炼“多轮对话上下文丢失”等核心痛点，据此完成 PRD 文档撰写与核心业务流程图绘制。</li>
+<li><span class="bullet-label">原型设计与交互落地：</span>使用 Axure 完成 C 端对话界面与 B 端知识库管理后台高保真原型；设计 10+ 组结构化 Prompt 模板，规范大模型输出边界，降低模型幻觉率，保障输出专业性与合规性。</li>
+<li><span class="bullet-label">数据驱动与迭代优化：</span>搭建核心业务数据看板，定义并追踪“问题解决率”“多轮对话完成率”等关键指标；分析 500+ 条会话日志定位长尾问题召回瓶颈，推动 V1.1 迭代，使核心问题回答准确率提升 25%。</li>
+  </ul>
+  <div class="exp-header">
+    <div class="exp-left"><span class="exp-company">美国大学生数学建模竞赛（MCM/ICM）</span><span class="exp-role">核心建模与数据分析</span></div>
+    <span class="exp-date">2022.02</span>
+  </div>
+  <ul class="bullet-list">
+<li><span class="bullet-label">业务拆解与指标定义：</span>针对复杂现实业务场景，主导需求调研与问题边界界定；将模糊业务痛点转化为可量化数学模型，定义并提取 3 个核心业务评估指标，为分析明确方向。</li>
+<li><span class="bullet-label">数据清洗与策略输出：</span>负责海量原始数据采集、清洗与异常值处理，构建数据驱动分析框架；基于模型结果输出优化策略，使用数据可视化工具呈现结论，最终荣获 S 奖。</li>
+  </ul>
+</div>
+<div class="section">
+  <div class="section-title">实习经历</div>
+  <div class="exp-header">
+    <div class="exp-left"><span class="exp-company">陕西省地方金融监管局 资本市场处</span><span class="exp-role">见习生</span></div>
+    <span class="exp-date">2023.07 ~ 2023.08</span>
+  </div>
+  <ul class="bullet-list">
+<li><span class="bullet-label">政务调研与公文撰写：</span>参与行业调研，负责政策研读、会议纪要起草及跨部门公文流转；累计处理政务公文 50+ 份，提炼核心业务数据与政策导向，保障信息流转高效准确。</li>
+<li><span class="bullet-label">跨部门协同与会议统筹：</span>协助组织多场行业会议与政务接待，负责跨部门沟通、议程排期与现场会务；全流程跟进 10+ 场会议零失误落地，工作执行力获上级书面表扬。</li>
+<li><span class="bullet-label">合规管理与数据归档：</span>严守保密规定，参与核心资料与行业数据的整理、脱敏与归档；累计整理卷宗 80+ 份，在复杂场景中保障数据处理严谨性与合规性。</li>
+  </ul>
+</div>
+  <div class="section">
+  <div class="section-title">岗位技能</div>
+  <div class="skill-item"><span class="skill-label">产品与运营：</span>熟悉产品运营闭环（需求调研→PRD→迭代优化），了解电商 ERP / WMS、SaaS 等 ToB 企业服务领域，对产品关键路径数据分析与指标监控有实操经验。</div>
+  <div class="skill-item"><span class="skill-label">用户调研与反馈：</span>具备用户/业务访谈与竞品分析能力，能跟踪收集客户产品使用反馈并提炼建设性优化建议。</div>
+  <div class="skill-item"><span class="skill-label">数据分析与可视化：</span>熟悉 SQL 基础查询，能搭建数据看板、定义核心指标，使用可视化工具直观呈现分析结论。</div>
+  <div class="skill-item"><span class="skill-label">跨部门协同与文档：</span>有跨部门资源协调、会议统筹与文档素材管理经验，负责信息同步与周边资料完善，保障落地高效准确。</div>
+  <div class="skill-item"><span class="skill-label">工具与证书：</span>熟练使用 Axure / Figma、Xmind / Visio、Git 及各类 AI 工具；精通 Office（Excel 数据透视表、PPT 汇报）；CET-4、普通话二级甲等。</div>
+</div>
+  <div class="section">
+  <div class="section-title">自我评价</div>
+  <div class="self-evaluation">兼具软件工程底层技术基础与政务/业务调研实践经验的复合型背景，能无障碍对接研发团队、理解 ToB 产品逻辑；扎实的数据分析与跨部门协同能力，可快速支撑产品运营中的数据监控、用户反馈跟踪与培训落地；抗压自驱，对电商 SaaS 业务保持高度学习热情。</div>
+</div>
+</div>
+<script>
+(function() {
+  var el = document.getElementById("resume");
+  if (!el) return;
+  var pageH = 297 - 18 - 14;
+  if (el.scrollHeight > pageH * 3.78) {
+    el.style.transformOrigin = "top left";
+    var scale = (pageH * 3.78) / el.scrollHeight;
+    el.style.transform = "scale(" + scale.toFixed(4) + ")";
+    el.style.width = (100 / scale).toFixed(2) + "%";
+  }
+})();
+</script>
+</body>
+</html>
