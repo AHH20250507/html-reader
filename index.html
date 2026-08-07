@@ -49,6 +49,13 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .cat-delete:hover{color:var(--red);background:rgba(255,59,48,.1)}
 .cat-delete svg{width:12px;height:12px}
 .sidebar-footer{margin-top:auto;padding:16px 20px}
+.token-status{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:4px;user-select:none}
+.token-status:hover{background:rgba(0,0,0,.04);color:var(--text)}
+.token-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text3)}
+.token-dot.ok{background:var(--green);box-shadow:0 0 0 2px rgba(52,199,89,.15)}
+.token-dot.err{background:var(--red);box-shadow:0 0 0 2px rgba(255,59,48,.15)}
+.token-dot.busy{background:var(--orange);animation:tdot-pulse 1.2s infinite}
+@keyframes tdot-pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 .topbar{height:var(--topbar-h);padding:0 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--glass);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
 .search-box{flex:1;max-width:400px;position:relative}
@@ -196,6 +203,10 @@ input,select,textarea{font-family:inherit;font-size:14px}
       <ul class="cat-list" id="catList"></ul>
     </div>
     <div class="sidebar-footer">
+      <div class="token-status" id="tokenStatus" onclick="showSettings()" title="点击检查 / 更新 Token">
+        <span class="token-dot busy" id="tokenDot"></span>
+        <span id="tokenStatusText">检测中...</span>
+      </div>
       <button onclick="showSettings()" style="color:var(--text2);font-size:12px;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         设置
@@ -352,8 +363,10 @@ input,select,textarea{font-family:inherit;font-size:14px}
         <input type="password" class="form-input" id="settingsToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace">
       </div>
       <div id="settingsStatus" style="font-size:12px;margin-top:-8px;margin-bottom:12px;min-height:18px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="tokenSourceInfo"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="testToken()" style="margin-right:auto">测试连接</button>
+        <button class="btn btn-ghost" onclick="resetToken()" id="resetTokenBtn">恢复默认</button>
         <button class="btn-cancel" onclick="hideSettings()">取消</button>
         <button class="btn btn-ghost" onclick="saveSettingsTemp()">临时登录</button>
         <button class="btn btn-primary" onclick="saveSettings()">保存</button>
@@ -390,17 +403,34 @@ function setGH(t,sessionOnly){if(sessionOnly){sessionToken=t}else{sessionToken='
 function getGHToken(){return sessionToken||localStorage.getItem('hr_gh_token')||BUILTIN_TOKEN}
 function isSessionOnly(){return!!sessionToken}
 
-async function validateToken(){
+function tokenSource(){if(sessionToken)return 'temp';if(localStorage.getItem('hr_gh_token'))return 'custom';return 'builtin'}
+async function checkToken(){
   const t=cleanToken(getGHToken());
-  if(!t)return false;
+  if(!t)return{ok:false,status:'missing'};
   try{
     const r=await fetch('https://api.github.com/rate_limit',{headers:{'Authorization':`token ${t}`,'Accept':'application/vnd.github.v3+json'}});
     if(!r.ok){
       if(!sessionToken)localStorage.removeItem('hr_gh_token');
-      return false;
+      return{ok:false,status:'invalid',source:tokenSource()};
     }
-    return true;
-  }catch(e){return true}
+    return{ok:true,status:'valid',source:tokenSource()};
+  }catch(e){return{ok:null,status:'network',source:tokenSource()}}
+}
+function updateTokenStatusUI(res){
+  const dot=document.getElementById('tokenDot'),txt=document.getElementById('tokenStatusText');
+  if(!dot||!txt)return;
+  dot.className='token-dot';
+  if(res.ok===true){dot.classList.add('ok');txt.textContent=res.source==='custom'?'Token 正常（自定义）':'Token 正常'}
+  else if(res.ok===false){dot.classList.add('err');txt.textContent='Token 已失效，点击更新'}
+  else{dot.classList.add('busy');txt.textContent='网络异常，无法检测'}
+}
+function promptTokenUpdate(msg){
+  showSettings();
+  const el=document.getElementById('settingsStatus');
+  if(msg)el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(msg)}，请更新 Token</span>`;
+  const input=document.getElementById('settingsToken');
+  if(!input.value||input.value===BUILTIN_TOKEN)input.value='';
+  input.focus();
 }
 
 let state={categories:[{id:'uncategorized',name:'未分类',color:'#86868b'}],books:[],currentCat:'all',viewMode:'grid',searchQuery:''};
@@ -415,7 +445,7 @@ async function ghFetch(path,opts={}){
   if(!token){showSettings();throw new Error('No token')}
   const url=path.startsWith('http')?path:`${GH_API}/contents/${path}`;
   const res=await fetch(url,{...opts,headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json',...(opts.headers||{})}});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`GitHub API error: ${res.status}`)}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401||res.status===403){if(!sessionToken)localStorage.removeItem('hr_gh_token');promptTokenUpdate(e.message||'Bad credentials')}throw new Error(e.message||`GitHub API error: ${res.status}`)}
   return res.json();
 }
 async function getFile(path){try{const d=await ghFetch(path);return{content:b64Decode(d.content),sha:d.sha}}catch(e){if(e.message.includes('404')||e.message.includes('Not Found'))return null;throw e}}
@@ -425,14 +455,14 @@ async function putFile(path,content,sha=null,message='Update'){
   const body={message,content:b64Encode(content),branch:'main'};
   if(sha)body.sha=sha;
   const res=await fetch(`${GH_API}/contents/${path}`,{method:'PUT',headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Put file failed: ${res.status}`)}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401||res.status===403){if(!sessionToken)localStorage.removeItem('hr_gh_token');promptTokenUpdate(e.message||'Bad credentials')}throw new Error(e.message||`Put file failed: ${res.status}`)}
   return res.json();
 }
 async function deleteFile(path,sha,message='Delete'){
   const token=cleanToken(getGHToken());
   if(!token){showSettings();throw new Error('No token')}
   const res=await fetch(`${GH_API}/contents/${path}`,{method:'DELETE',headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message,sha,branch:'main'})});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Delete failed: ${res.status}`)}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401||res.status===403){if(!sessionToken)localStorage.removeItem('hr_gh_token');promptTokenUpdate(e.message||'Bad credentials')}throw new Error(e.message||`Delete failed: ${res.status}`)}
   return res.json();
 }
 
@@ -609,13 +639,55 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('searchInput').focus()}
 });
 
-function showSettings(){document.getElementById('settingsModal').classList.add('active');document.getElementById('settingsToken').value=getGHToken();document.getElementById('settingsStatus').innerHTML=isSessionOnly()?'<span style="color:var(--orange)">⚠️ 当前为临时登录，关闭页面后需重新输入</span>':''}
+function showSettings(){
+  document.getElementById('settingsModal').classList.add('active');
+  const input=document.getElementById('settingsToken'),src=tokenSource();
+  input.value=src==='builtin'?'':getGHToken();
+  const info=document.getElementById('tokenSourceInfo');
+  if(src==='temp')info.innerHTML='当前使用 <b>临时登录</b> 的 Token（仅本次会话有效，关闭页面后失效）';
+  else if(src==='custom')info.innerHTML='当前使用 <b>自定义 Token</b>（已保存在本地），如失效可点击「恢复默认」';
+  else info.innerHTML='当前使用 <b>内置默认 Token</b>，无需手动输入';
+  document.getElementById('settingsStatus').innerHTML=isSessionOnly()?'<span style="color:var(--orange)">⚠️ 当前为临时登录，关闭页面后需重新输入</span>':'';
+}
 function hideSettings(){document.getElementById('settingsModal').classList.remove('active')}
-async function testToken(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return;const el=document.getElementById('settingsStatus');el.innerHTML='<span style="color:var(--text2)">连接中...</span>';try{const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}`,{headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}});if(r.ok)el.innerHTML='<span style="color:var(--green)">✓ 连接成功</span>';else{const e=await r.json().catch(()=>({}));el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'Token 无效')}</span>`}}catch(e){el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'网络错误')}</span>`}}
-function saveSettings(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,false);hideSettings();toast('设置已保存');init()}
-function saveSettingsTemp(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,true);hideSettings();toast('临时登录成功');init()}
+async function testToken(){
+  const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return;
+  const el=document.getElementById('settingsStatus');el.innerHTML='<span style="color:var(--text2)">连接中...</span>';
+  try{
+    const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}`,{headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}});
+    if(r.ok)el.innerHTML='<span style="color:var(--green)">✓ 连接成功</span>';
+    else{const e=await r.json().catch(()=>({}));el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'Token 无效或已过期')}</span>`}
+  }catch(e){el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'网络错误')}</span>`}
+}
+async function saveSettings(){
+  const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');
+  const el=document.getElementById('settingsStatus');el.innerHTML='<span style="color:var(--text2)">验证中...</span>';
+  try{
+    const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}`,{headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}});
+    if(!r.ok){const e=await r.json().catch(()=>({}));el.innerHTML=`<span style="color:var(--red)">✗ ${escHtml(e.message||'Token 无效或已过期')}，未保存</span>`;return}
+    setGH(token,false);hideSettings();toast('Token 已更新');checkToken().then(updateTokenStatusUI);init();
+  }catch(e){el.innerHTML=`<span style="color:var(--red)">✗ 网络错误，未保存</span>`}
+}
+function saveSettingsTemp(){const token=cleanToken(document.getElementById('settingsToken').value);if(!token)return toast('请输入 Token','error');setGH(token,true);hideSettings();toast('临时登录成功');checkToken().then(updateTokenStatusUI);init()}
+function resetToken(){setGH('',false);localStorage.removeItem('hr_gh_token');hideSettings();toast('已恢复内置默认 Token');checkToken().then(updateTokenStatusUI);init()}
 
-async function init(){restoreSidebar();renderCategories();renderBooks();if(!getGHToken()){showSettings();return}try{if(!(await validateToken())){if(!getGHToken()){showSettings();return}}await loadMetadata();renderCategories();renderBooks()}catch(e){if(e.message.includes('401')||e.message.includes('403')){showSettings();toast('Token 无效，请重新设置','error')}else toast('加载失败: '+e.message,'error')}}
+async function init(){
+  restoreSidebar();renderCategories();renderBooks();
+  if(!getGHToken()){showSettings();return}
+  updateTokenStatusUI({ok:null});
+  try{
+    const res=await checkToken();
+    updateTokenStatusUI(res);
+    if(res.ok===false){
+      if(getGHToken()){await loadMetadata();renderCategories();renderBooks();promptTokenUpdate('当前 Token 已失效或过期')}
+      else showSettings();
+      return;
+    }
+    await loadMetadata();renderCategories();renderBooks();
+  }catch(e){if(e.message.includes('401')||e.message.includes('403')){promptTokenUpdate('Token 无效或已过期')}else toast('加载失败: '+e.message,'error')}
+}
+setInterval(()=>{checkToken().then(res=>{updateTokenStatusUI(res);if(res.ok===false)promptTokenUpdate('Token 已失效或过期，请更新')})},5*60*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkToken().then(updateTokenStatusUI)});
 init();
 </script>
 </body>
