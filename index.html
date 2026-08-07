@@ -63,7 +63,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .search-box input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,122,255,.12)}
 .search-box svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text3);pointer-events:none}
 .topbar-actions{display:flex;gap:8px;margin-left:auto}
-.btn{height:36px;padding:0 16px;border-radius:var(--radius-sm);font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn{height:36px;padding:0 16px;border-radius:999px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-primary:hover{background:#0066d6}
 .btn-ghost{color:var(--text)}
@@ -132,8 +132,14 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .form-select{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:all .2s}
 .form-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:8px}
-.btn-cancel{height:36px;padding:0 16px;border-radius:var(--radius-sm);font-weight:500;color:var(--text)}
+.btn-cancel{height:36px;padding:0 16px;border-radius:999px;font-weight:500;color:var(--text)}
 .btn-cancel:hover{background:rgba(0,0,0,.04)}
+.settings-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-8px;margin-bottom:10px;min-height:20px;font-size:12px}
+.settings-link{color:var(--blue);font-size:12px;font-weight:500;padding:4px 8px;border-radius:8px;white-space:nowrap}
+.settings-link:hover{background:rgba(0,122,255,.08)}
+.settings-info{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:16px}
+.settings-temp{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;color:var(--text3);padding-top:14px;margin-top:6px;border-top:1px solid var(--border)}
+.settings-temp .settings-link{padding:2px 6px}
 
 .drop-zone{position:fixed;inset:0;z-index:1500;background:rgba(0,122,255,.08);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .drop-zone.active{opacity:1;pointer-events:all}
@@ -362,15 +368,17 @@ input,select,textarea{font-family:inherit;font-size:14px}
         <label class="form-label">GitHub Token</label>
         <input type="password" class="form-input" id="settingsToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace">
       </div>
-      <div id="settingsStatus" style="font-size:12px;margin-top:-8px;margin-bottom:12px;min-height:18px"></div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="tokenSourceInfo"></div>
+      <div class="settings-status-row">
+        <span id="settingsStatus"></span>
+        <button class="settings-link" onclick="testToken()">测试连接</button>
+      </div>
+      <div class="settings-info" id="tokenSourceInfo"></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="testToken()" style="margin-right:auto">测试连接</button>
-        <button class="btn btn-ghost" onclick="resetToken()" id="resetTokenBtn">恢复默认</button>
         <button class="btn-cancel" onclick="hideSettings()">取消</button>
-        <button class="btn btn-ghost" onclick="saveSettingsTemp()">临时登录</button>
+        <button class="btn btn-ghost" onclick="resetToken()" id="resetTokenBtn">恢复默认</button>
         <button class="btn btn-primary" onclick="saveSettings()">保存</button>
       </div>
+      <div class="settings-temp">公共电脑？<button class="settings-link" onclick="saveSettingsTemp()">使用临时登录</button></div>
     </div>
   </div>
 </div>
@@ -647,6 +655,7 @@ function showSettings(){
   if(src==='temp')info.innerHTML='当前使用 <b>临时登录</b> 的 Token（仅本次会话有效，关闭页面后失效）';
   else if(src==='custom')info.innerHTML='当前使用 <b>自定义 Token</b>（已保存在本地），如失效可点击「恢复默认」';
   else info.innerHTML='当前使用 <b>内置默认 Token</b>，无需手动输入';
+  document.getElementById('resetTokenBtn').style.display=src==='builtin'?'none':'';
   document.getElementById('settingsStatus').innerHTML=isSessionOnly()?'<span style="color:var(--orange)">⚠️ 当前为临时登录，关闭页面后需重新输入</span>':'';
 }
 function hideSettings(){document.getElementById('settingsModal').classList.remove('active')}
