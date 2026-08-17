@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1786345243981,
+  "updatedAt": 1786934059569,
   "categories": [
     {
       "id": "uncategorized",
@@ -27,15 +27,6 @@
       "pinned": true,
       "importDate": 1782797071560,
       "lastRead": 1783519015319
-    },
-    {
-      "id": "book_1785178622774_da7lt9",
-      "title": "齐瑞雪_resume_产品运营实习",
-      "filename": "book_1785178622774_da7lt9.html",
-      "category": "uncategorized",
-      "pinned": false,
-      "importDate": 1785178637679,
-      "lastRead": 1786345243981
     }
   ]
 }
